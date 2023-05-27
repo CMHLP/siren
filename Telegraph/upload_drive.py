@@ -28,6 +28,6 @@ def upload_to_drive(file_path, filename, folder_id):
 
 
 if __name__ == '__main__':
-    file_path = 'hindustantimes.csv'
+    file_path = 'telegraph.csv'
     filename = os.path.basename(file_path)
     upload_to_drive(file_path, filename, folder_id)
