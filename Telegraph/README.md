@@ -4,7 +4,7 @@ The script hard-coded to monitor the occurrence of specific keywords in the 3 ed
     "calcutta": "71",
     "south bengal": "72",
     "north bengal": "73", over a given period of a month.
-For the current configuration it is set to search for the keywords "suicide", "kills self", and "ends life" in different editions of the Telegraph India.
+For the current configuration it is set to search for the keywords that are hard coded.
 
 The script is divided into several functions:
 
@@ -22,10 +22,10 @@ Hardcoded Variables
 
 Instructions
 
-    Install the required Python libraries, if not already installed: datetime, io, os, cv2, numpy, pandas, pytesseract, requests, PIL, bs4.
-    Make sure you have the Tesseract-OCR executable installed on your machine and the path to the executable is correctly set in the script.
-    Run the script using a Python interpreter.
-    The script will download the images, extract text, search for keywords, and save the results in a CSV file named with the current date in the same directory as the script. The CSV file will have columns for date, edition, page, region, title, text, and image_path.
+Install the required Python libraries, if not already installed: datetime, io, os, cv2, numpy, pandas, pytesseract, requests, PIL, bs4.
+Make sure you have the Tesseract-OCR executable installed on your machine and the path to the executable is correctly set in the script.
+Run the script using a Python interpreter.
+The script will download the images, extract text, search for keywords, and save the results in a CSV file named with the current date in the same directory as the script. The CSV file will have columns for date, edition, page, region, title, text, and image_path.
 
 Note: The image saving part of the script is currently commented out. If you wish to save the images on your machine, uncomment the relevant lines and make sure you have the appropriate permissions to create directories and save files.
 
