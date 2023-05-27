@@ -25,16 +25,16 @@ def main():
     WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
     # browser.save_screenshot("screenshot.png")
-    ids = ["3353 - Chennai", "3361 - Madurai", "3360 - Coimbatore"]
-           # ,"3464 - Vijayawada", "3463 - Vishakapatnam", "3511 - Tirupati", "8680 - Anantapur", "8681 - Tadepalligudem",
-           # "3381 - Hyderabad", "3455 - Tiruchy", "3480 - Tirunelveli", "3456 - Vellore", "3458 - Dharmapuri",
-           # "5516 - Villupuram",
-           # "11449 - Nagapattinam", "3357 - Bengaluru", "28559 - Mysuru", "3467 - Belagavi", "4619 - Shivamogga",
-           # "3474 - Mangaluru",
-           # "3466 - Hubballi", "22689 - Kalaburagi", "3381 - Telangana", "3358 - Kochi", "3469 - Kozhikode", "3468 - Thiruvananthapuram",
-           # "5601 - Kottayam",
-           # "6539 - Kollam", "11447 - Kannur", "11448 - Thrissur", "3359 - Bhubaneswar", "11782 - Jeypore",
-           # "5605 - Sambalpur"]
+    ids = ["3353 - Chennai", "3361 - Madurai", "3360 - Coimbatore"
+            ,"3464 - Vijayawada", "3463 - Vishakapatnam", "3511 - Tirupati", "8680 - Anantapur", "8681 - Tadepalligudem",
+            "3381 - Hyderabad", "3455 - Tiruchy", "3480 - Tirunelveli", "3456 - Vellore", "3458 - Dharmapuri",
+            "5516 - Villupuram",
+            "11449 - Nagapattinam", "3357 - Bengaluru", "28559 - Mysuru", "3467 - Belagavi", "4619 - Shivamogga",
+            "3474 - Mangaluru",
+            "3466 - Hubballi", "22689 - Kalaburagi", "3381 - Telangana", "3358 - Kochi", "3469 - Kozhikode", "3468 - Thiruvananthapuram",
+            "5601 - Kottayam",
+            "6539 - Kollam", "11447 - Kannur", "11448 - Thrissur", "3359 - Bhubaneswar", "11782 - Jeypore",
+            "5605 - Sambalpur"]
 
     main_url = "https://epaper.newindianexpress.com/user/mypurchase"
 
