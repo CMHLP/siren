@@ -183,4 +183,4 @@ for i in range(30, 0, -1):
 # Create a DataFrame from the list
 result_df = pd.DataFrame(lst, columns=df_columns)
 result_df = result_df.drop_duplicates()
-result_df.to_csv(f'{date_today}.csv')
+result_df.to_csv(f'Telegraph.csv')
