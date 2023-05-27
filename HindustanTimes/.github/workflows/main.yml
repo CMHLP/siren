@@ -1,0 +1,42 @@
+name: Hindustan Times Scraper
+
+on:
+  schedule:
+    cron: '0 0 1 */2 *'  # Run the workflow at midnight on the 1st day of This will run the workflow at midnight (00:00) on the 1st day of every second month (January, March, May, July, September, and November).
+
+#    - cron: '0 0 * * *'  # Run the workflow every day at midnight
+
+
+jobs:
+  scrape_and_upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install requests beautifulsoup4 pandas selenium google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
+    - name: Install ChromeDriver
+      run: |
+        sudo apt update
+        sudo apt install -y chromium-chromedriver
+        echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
+
+    - name: Run scraper
+      run: python hindustantimes.py
+
+    - name: Upload to Google Drive
+      env:
+        SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.SERVICE_ACCOUNT_CREDENTIALS }}
+      run: |
+        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json
+        python upload_drive.py  
+        
