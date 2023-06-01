@@ -1,0 +1,39 @@
+name: Hindustan Times Scraper
+
+on:
+  schedule:
+    - cron: '30 19 * * *' 
+
+
+jobs:
+  scrape_and_upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install requests beautifulsoup4 pandas selenium google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
+    - name: Install ChromeDriver
+      run: |
+        sudo apt update
+        sudo apt install -y chromium-chromedriver
+        echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
+
+    - name: Run scraper
+      run: python HindustanTimes/hindustantimes.py
+
+    - name: Upload to Google Drive
+      env:
+        SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.SERVICE_ACCOUNT_CREDENTIALS }}
+      run: |
+        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json
+        python HindustanTimes/upload_drive.py  
