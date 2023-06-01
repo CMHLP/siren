@@ -1,9 +1,6 @@
-name: Hindustan Times Scraper
+name: Test Hindustan Times Scraper
 
-on:
-  schedule:
-    - cron: '30 19 * * *' 
-
+on: workflow_dispatch
 
 jobs:
   scrape_and_upload:
