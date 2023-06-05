@@ -6,14 +6,16 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 
 import os
-chrome_driver_path = os.environ.get("CHROMEDRIVER_PATH")
+chrome_driver_path = os.environ.get("CHROMEDRIVER_PATH") or "chromedriver.exe"  # default to chromedriver.exe if env var missing
+
 base_url = "https://epaper.hindustantimes.com/Home/Search?SearchText=suicide&EditionId={}&FromDate=01%2f07%2f2022&ToDate=30%2f09%2f2022&grid-column=editionDate&grid-dir=0&grid-page={}"
 articles = []
-
-browser = webdriver.Chrome(executable_path=chrome_driver_path)
-browser.set_page_load_timeout(60)
+service = Service(executable_path=chrome_driver_path)   
+browser = webdriver.Chrome(service=service)  
+browser.set_page_load_timeout(60)  
 
 for ed_id in range(1, 60):
     for page_num in range(1, 11):

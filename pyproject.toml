@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "siren"
+version = "0.1.0"
+description = "Scrapers for the SIREN project"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.31.0"
+bs4 = "^0.0.1"
+pandas = "^2.0.1"
+selenium = "^4.9.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
