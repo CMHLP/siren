@@ -19,7 +19,7 @@ edition_ids = {
 
 keywords = ["suicide", "kills self", "ends life"]
 
-df_columns = ["date", "edition", "page", "region", "title", "text", "image_path"]
+df_columns = ["date", "edition", "page", "region", "title", "text"]
 lst = []
 
 
@@ -176,7 +176,7 @@ for i in range(30, 0, -1):
                                     #     print(f"Saved {image_name} to {page_folder} folder")
                                     # print(str(lst[-1]))
                                     lst.append(
-                                        [date_today, edition_name, str(count), reg, title, extracted_text, image_path])
+                                        [date_today, edition_name, str(count), reg, title, extracted_text])
                             except UnidentifiedImageError:
                                 print(f"Failed to identify image")
                                 continue
