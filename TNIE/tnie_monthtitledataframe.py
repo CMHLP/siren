@@ -6,13 +6,17 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 from processpdftnie import process_pdf
 
 chrome_driver_path = os.environ.get("CHROMEDRIVER_PATH")
 
 def main():
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
     service = ChromeService(executable_path=chrome_driver_path)
-    browser = webdriver.Chrome(service=service)
+    browser = webdriver.Chrome(service=service, options=options)
 
     browser.get(
         "https://www.readwhere.com/user/loginv3?client=rwconnectV3&xdm_key=xdm_key_1682054447&client_id=1590948661&main_window_url=https%3A%2F%2Fepaper.newindianexpress.com%2Fuser%2Fmypurchase")
