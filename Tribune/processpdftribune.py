@@ -5,19 +5,16 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
-from pdf2image import convert_from_path
 from PIL import Image
-def process_pdf(pdf_folder):
-    cwd = os.getcwd()
 
-    # pdf_folder = f"{cwd}\\TNIE"
-    print (pdf_folder)
+def process_images(images_folder):
+    cwd = os.getcwd()
+    print(images_folder)
 
     keywords = ["suicide", "kills self", "ends life"]
 
-    df_columns = ["date", "edition", "page", "region", "title", "text", "pdf_path"]
+    df_columns = ["date", "edition", "page", "region", "title", "text", "image_path"]
     lst = []
-
 
     def get_regions(image):
         width, height = image.size
@@ -42,7 +39,6 @@ def process_pdf(pdf_folder):
                 regions[region_name] = region
         return regions
 
-
     def find_word_in_regions(regions):
         for region_name, region_image in regions.items():
             text = pytesseract.image_to_string(region_image, lang="eng")
@@ -50,7 +46,6 @@ def process_pdf(pdf_folder):
                 return region_name
             else:
                 continue
-
 
     def get_title(imag):
         open_cv_image = np.array(imag)
@@ -86,44 +81,36 @@ def process_pdf(pdf_folder):
         tit = tit[0:50]
         return tit
 
-    for pdf_file_name in os.listdir(pdf_folder):
-        print(f"Processing file: {pdf_file_name}")
-        if not pdf_file_name.endswith(".pdf"):
-            print(f"Skipping non-PDF file: {pdf_file_name}")
-            continue
+    for dirpath, dirnames, filenames in os.walk(images_folder):
+        for image_file_name in filenames:           
+            if not (image_file_name.endswith(".png") or image_file_name.endswith(".jpeg") or image_file_name.endswith(".jpg")):
+                print(f"Skipping non-image file: {image_file_name}")
+                continue
 
-        date_and_edition_match = re.search(
-            r"The-New-Indian-Express-([\w-]+)-(\d{2}-\d{2}-\d{4}).pdf", pdf_file_name
-        )
-        if not date_and_edition_match:
-            print(f"Invalid file name: {pdf_file_name}")
-            continue
+            image_path = os.path.join(dirpath, image_file_name)
+            image = Image.open(image_path)
 
-        edition_name, date_today = date_and_edition_match.groups()
+            date_today, edition_name, _, page_number, _ = image_file_name.split('-')
+            page_number = re.sub('\D', '', page_number)
 
-        pdf_path = os.path.join(pdf_folder, pdf_file_name)
-        print(f"Converting PDF to images: {pdf_path}")
-        pdf_images = convert_from_path(pdf_path)
+            print(f"Processing image file: {image_file_name}")
 
-        page_count = 1
-        for pdf_page in pdf_images:
-            print(f"Processing page {page_count} of {pdf_file_name}")
-            regions = get_regions(pdf_page)
+            regions = get_regions(image)
             region = find_word_in_regions(regions)
 
-            extracted_text = pytesseract.image_to_string(pdf_page, lang="eng")
+            extracted_text = pytesseract.image_to_string(image, lang="eng")
             keyword_found = any([keyword in extracted_text.lower() for keyword in keywords])
 
             if keyword_found:
-                print(f"Keyword found in page {page_count} of {pdf_file_name}")
+                print(f"Keyword found in file {image_file_name}")
                 extracted_text = extracted_text.replace('\n', ' ')
                 try:
-                    title = get_title(pdf_page)
+                    title = get_title(image)
                 except Exception as e:
                     print(f"Error encountered in title extraction: {e}")
                     title = ""
             else:
-                print(f"No keyword found in page {page_count} of {pdf_file_name}")
+                print(f"No keyword found in file {image_file_name}")
                 region = ""
                 title = ""
                 extracted_text = ""
@@ -132,13 +119,12 @@ def process_pdf(pdf_folder):
                 [
                     date_today,
                     edition_name,
-                    str(page_count),
+                    str(page_number),
                     region,
                     title,
                     extracted_text,
-                    pdf_path,
+                    image_path,
                 ])
-            page_count += 1
 
     # Create a DataFrame from the list
     result_df = pd.DataFrame(lst, columns=df_columns)
