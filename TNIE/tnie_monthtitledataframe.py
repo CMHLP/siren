@@ -18,6 +18,12 @@ def main():
     service = ChromeService(executable_path=chrome_driver_path)
     browser = webdriver.Chrome(service=service, options=options)
 
+    # Add this line to set the downloads folder to the home directory
+    home_directory = os.path.expanduser("~")
+    browser.command_executor._commands["send_command"] = ("POST", '/session/$sessionId/chromium/send_command')
+    params = {'cmd': 'Page.setDownloadBehavior', 'params': {'behavior': 'allow', 'downloadPath': home_directory}}
+    browser.execute("send_command", params)
+    
     browser.get(
         "https://www.readwhere.com/user/loginv3?client=rwconnectV3&xdm_key=xdm_key_1682054447&client_id=1590948661&main_window_url=https%3A%2F%2Fepaper.newindianexpress.com%2Fuser%2Fmypurchase")
 
@@ -71,7 +77,7 @@ def main():
     browser.quit()
 
 main()
-downloads_directory = os.path.join(os.path.expanduser("~"), "Downloads")
+downloads_directory = os.path.expanduser("~")  # Set the downloads directory to the home directory
 process_pdf(downloads_directory)
 
 
