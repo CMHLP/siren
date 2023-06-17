@@ -34,6 +34,9 @@ jobs:
 
     - name: Run OCR script
       run: python Tribune/tribune_monthtitledataframe.py
+      
+    - name: Run process script
+      run: python Tribune/processpdftribune.py
 
     - name: Upload to Google Drive
       env:
