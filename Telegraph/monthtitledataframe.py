@@ -180,7 +180,7 @@ def scrape(date_today, edition_name, edition_id, count):
 # Loop through the last 30 days
 
 executor = ThreadPoolExecutor()
-futures: list[Future] = []
+futures = []
 
 start = perf_counter()
 for i in range(30, 0, -1):
