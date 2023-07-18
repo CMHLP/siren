@@ -8,6 +8,8 @@ import pytesseract
 import requests
 from PIL import Image, UnidentifiedImageError
 from bs4 import BeautifulSoup
+from concurrent.futures import Future, ThreadPoolExecutor
+from time import perf_counter
 
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
@@ -19,7 +21,7 @@ edition_ids = {
 
 keywords = ["suicide", "kills self", "ends life"]
 
-df_columns = ["date", "edition", "page", "region", "title", "text"]
+df_columns = ["date", "edition", "page", "region", "title", "text", "image_url"]
 lst = []
 
 
@@ -112,7 +114,75 @@ def get_title(imag):
     return tit
 
 
+def scrape(date_today, edition_name, edition_id, count):
+    url = f"https://epaper.telegraphindia.com/{edition_name}/{date_today}/{edition_id}/Page-{str(count)}.html"
+    response = requests.get(url)
+    print(f'page no: {count}\n')
+    reg = keyword_region(response)
+    soup = BeautifulSoup(response.content, "html.parser")
+    showpop_elements = []
+    for area in soup.find_all("area"):
+        onclick = area.get("onclick")
+        if onclick and ("show_popclink" in onclick or "show_pophead" in onclick or "show_pop" in onclick):
+            showpop_elements.append(area)
+
+    for showpop_element in showpop_elements:
+        onclick = showpop_element.get("onclick")
+        if onclick:
+            onclick_parts = onclick.split(",")
+            newspaper_id = onclick_parts[0].split("'")[1]
+            publication_id = onclick_parts[1].split("'")[1]
+
+            image_url = f"https://epaper.telegraphindia.com/imageview/{newspaper_id}/{publication_id}/{edition_id}.html"
+
+            # print(f'image_url: {image_url}\n')
+            response = requests.get(image_url)
+            image_page_soup = BeautifulSoup(response.content, "html.parser")
+
+            img_element = image_page_soup.find("img", onclick="zoomin(this.id);")
+
+            if img_element:
+                img_src = img_element.get("src")
+                if img_src:
+                    img_response = requests.get(img_src)
+
+                    try:
+                        img = Image.open(BytesIO(img_response.content))
+
+                        extracted_text = pytesseract.image_to_string(img, lang="eng")
+                        # extracted_text = extracted_text.replace('\n', ' ')
+                        # img_text = pytesseract.image_to_string(Image.open(BytesIO(response.content)))
+                        if any([keyword in extracted_text.lower() for keyword in keywords]):
+                            extracted_text = extracted_text.replace('\n', ' ')
+                            try:
+                                title = get_title(img)
+                            except Exception as e:
+                                print(f"Error encountered in title extraction: {e}")
+                                title = ""
+
+                            # page_folder = os.path.join("telegraph_images", edition_name, date_today,
+                            #                            f"Page-{count}")
+                            # if not os.path.exists(page_folder):
+                            #     os.makedirs(page_folder)
+                            # image_name = f"{date_today}_{newspaper_id}_{publication_id}_{count}_{edition_name}.jpg"
+                            # image_path = os.path.join(page_folder, image_name)
+                            # with open(image_path, "wb") as f:
+                            #     f.write(img_response.content)
+                            #     print(f"Saved {image_name} to {page_folder} folder")
+                            # print(str(lst[-1]))
+                            lst.append(
+                                [date_today, edition_name, str(count), reg, title, extracted_text, image_url])
+                    except UnidentifiedImageError:
+                        print(f"Failed to identify image")
+                        continue
+
+
 # Loop through the last 30 days
+
+executor = ThreadPoolExecutor()
+futures: list[Future] = []
+
+start = perf_counter()
 for i in range(30, 0, -1):
 # for i in range(1, 0, -1):
     current_date = date.today() - timedelta(days=i)
@@ -120,67 +190,15 @@ for i in range(30, 0, -1):
 
     for edition_name, edition_id in edition_ids.items():
         for count in range(1, 14):
-            url = f"https://epaper.telegraphindia.com/{edition_name}/{date_today}/{edition_id}/Page-{str(count)}.html"
-            response = requests.get(url)
-            print(f'page no: {count}\n')
-            reg = keyword_region(response)
-            soup = BeautifulSoup(response.content, "html.parser")
-            showpop_elements = []
-            for area in soup.find_all("area"):
-                onclick = area.get("onclick")
-                if onclick and ("show_popclink" in onclick or "show_pophead" in onclick or "show_pop" in onclick):
-                    showpop_elements.append(area)
+                fut = executor.submit(scrape, date_today, edition_name, edition_id, count)
+                futures.append(fut)
+                print(f"Submitted {date_today}, {count}, {edition_id}, {edition_name}")
 
-            for showpop_element in showpop_elements:
-                onclick = showpop_element.get("onclick")
-                if onclick:
-                    onclick_parts = onclick.split(",")
-                    newspaper_id = onclick_parts[0].split("'")[1]
-                    publication_id = onclick_parts[1].split("'")[1]
+executor.shutdown()
 
-                    image_url = f"https://epaper.telegraphindia.com/imageview/{newspaper_id}/{publication_id}/{edition_id}.html"
-
-                    # print(f'image_url: {image_url}\n')
-                    response = requests.get(image_url)
-                    image_page_soup = BeautifulSoup(response.content, "html.parser")
-
-                    img_element = image_page_soup.find("img", onclick="zoomin(this.id);")
-
-                    if img_element:
-                        img_src = img_element.get("src")
-                        if img_src:
-                            img_response = requests.get(img_src)
-
-                            try:
-                                img = Image.open(BytesIO(img_response.content))
-
-                                extracted_text = pytesseract.image_to_string(img, lang="eng")
-                                # extracted_text = extracted_text.replace('\n', ' ')
-                                # img_text = pytesseract.image_to_string(Image.open(BytesIO(response.content)))
-                                if any([keyword in extracted_text.lower() for keyword in keywords]):
-                                    extracted_text = extracted_text.replace('\n', ' ')
-                                    try:
-                                        title = get_title(img)
-                                    except Exception as e:
-                                        print(f"Error encountered in title extraction: {e}")
-                                        title = ""
-
-                                    # page_folder = os.path.join("telegraph_images", edition_name, date_today,
-                                    #                            f"Page-{count}")
-                                    # if not os.path.exists(page_folder):
-                                    #     os.makedirs(page_folder)
-                                    # image_name = f"{date_today}_{newspaper_id}_{publication_id}_{count}_{edition_name}.jpg"
-                                    # image_path = os.path.join(page_folder, image_name)
-                                    # with open(image_path, "wb") as f:
-                                    #     f.write(img_response.content)
-                                    #     print(f"Saved {image_name} to {page_folder} folder")
-                                    # print(str(lst[-1]))
-                                    lst.append(
-                                        [date_today, edition_name, str(count), reg, title, extracted_text])
-                            except UnidentifiedImageError:
-                                print(f"Failed to identify image")
-                                continue
 # Create a DataFrame from the list
 result_df = pd.DataFrame(lst, columns=df_columns)
 result_df = result_df.drop_duplicates()
 result_df.to_csv(f'telegraph.csv')
+
+print(f"Finished in {perf_counter() - start}s")
