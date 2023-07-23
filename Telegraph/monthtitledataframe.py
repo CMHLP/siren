@@ -7,7 +7,7 @@ import pandas as pd
 import pytesseract
 import requests
 from PIL import Image, UnidentifiedImageError
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from concurrent.futures import Future, ThreadPoolExecutor
 from time import perf_counter
 
@@ -140,10 +140,12 @@ def scrape(date_today, edition_name, edition_id, count):
             image_page_soup = BeautifulSoup(response.content, "html.parser")
 
             img_element = image_page_soup.find("img", onclick="zoomin(this.id);")
+            assert isinstance(img_element, Tag)
 
             if img_element:
-                img_src = img_element.get("src")
+                img_src = img_element.get("src") 
                 if img_src:
+                    assert isinstance(img_src, str)
                     img_response = requests.get(img_src)
 
                     try:
@@ -199,6 +201,7 @@ executor.shutdown()
 # Create a DataFrame from the list
 result_df = pd.DataFrame(lst, columns=df_columns)
 result_df = result_df.drop_duplicates()
+assert result_df is not None
 result_df.to_csv(f'telegraph.csv')
 
 print(f"Finished in {perf_counter() - start}s")

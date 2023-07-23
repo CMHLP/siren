@@ -11,10 +11,17 @@ requests = "^2.31.0"
 bs4 = "^0.0.1"
 pandas = "^2.0.1"
 selenium = "^4.9.1"
-opencv-python = "^4.7.0.72"
 pytesseract = "^0.3.10"
 pdf2img = "^0.1.2"
 lxml = "^4.9.2"
+opencv-contrib-python = "^4.8.0.74"
+numpy = "^1.25.1"
+opencv-python = "^4.8.0.74"
+pillow = "^10.0.0"
+google-auth = "^2.22.0"
+google-auth-oauthlib = "^1.0.0"
+google-auth-httplib2 = "^0.1.0"
+google-api-python-client = "^2.94.0"
 
 
 [build-system]
