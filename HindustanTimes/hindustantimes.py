@@ -34,7 +34,7 @@ class Scraper(BaseScraper):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         self.base_url = URL(
-            "https://epaper.hindustantimes.com/Home/Search?SearchText=suicide&EditionId={}&grid-column=editionDate&grid-dir=0&grid-page={}"
+            "https://epaper.hindustantimes.com/Home/Search?SearchText=suicide&grid-column=editionDate&grid-dir=0"
         )
         service = Service(executable_path=chrome_driver_path)
         self.browser = webdriver.Chrome(service=service, options=chrome_options)
@@ -47,6 +47,8 @@ class Scraper(BaseScraper):
             dates = {
                 "FromDate": self.start.strftime(fmt),
                 "ToDate": self.end.strftime(fmt),
+                "EditionId": ed_id,
+                "grid-page": page_num,
             }
             url = self.base_url % dates
             url = str(url).format(ed_id, page_num)
