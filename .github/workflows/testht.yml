@@ -17,7 +17,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install requests beautifulsoup4 pandas selenium google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+        pip install poetry
+        poetry install
+        poetry shell
 
     - name: Install ChromeDriver
       run: |
@@ -26,11 +28,11 @@ jobs:
         echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
 
     - name: Run scraper
-      run: python HindustanTimes/hindustantimes.py
+      run: python run.py hindustan_times
 
     - name: Upload to Google Drive
       env:
         SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.SERVICE_ACCOUNT_CREDENTIALS }}
       run: |
-        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json
-        python HindustanTimes/upload_drive.py  
+        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json  
+        # python HindustanTimes/upload_drive.py  
