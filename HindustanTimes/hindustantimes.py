@@ -50,6 +50,7 @@ class Scraper(BaseScraper):
             }
             url = self.base_url % dates
             url = str(url).format(ed_id, page_num)
+            print(f"Scraping {url}")
             response = requests.get(url)
 
             soup = BeautifulSoup(response.text, "html.parser")
