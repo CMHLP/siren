@@ -115,4 +115,6 @@ class Scraper(BaseScraper):
                     futures.append(fut)
         for fut in futures:
             print(fut.result())
+
+        print(f"SCRAPED {len(self.items)}")
         self.save()
