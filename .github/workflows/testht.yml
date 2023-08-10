@@ -27,6 +27,8 @@ jobs:
         echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
 
     - name: Run scraper
+      env:
+        SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.SERVICE_ACCOUNT_CREDENTIALS }}
       run: poetry run python run.py hindustan_times
 
     - name: Upload to Google Drive
