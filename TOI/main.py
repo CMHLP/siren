@@ -1,9 +1,10 @@
 import asyncio
-from datetime import datetime
-import time
-from typing import Any
-import httpx
 import csv
+import time
+from datetime import datetime
+from typing import Any
+
+import httpx
 import pydantic
 
 
@@ -80,7 +81,7 @@ class Search:
         self.start = start or datetime.now()
         self.end = end or datetime.now()
 
-        join = lambda s: ', '.join(s)
+        join = lambda s: ", ".join(s)
 
         self.data: dict[str, Any] = {
             "allOfThese": join(include_all),
@@ -109,8 +110,10 @@ class Search:
         resp = await self.client.post(self.url, data=copy)
         data = resp.json()
         if isinstance(data, str):
-            raise RuntimeError(f"Couldn't serialize incoming data to JSON: {data}\nResponse: {resp}")
-        return SearchResult(**data, page=page_no) 
+            raise RuntimeError(
+                f"Couldn't serialize incoming data to JSON: {data}\nResponse: {resp}"
+            )
+        return SearchResult(**data, page=page_no)
 
     async def get_all(self) -> list[Article]:
         initial = await self.get_page()
@@ -130,13 +133,10 @@ class Search:
         return articles
 
     def __repr__(self):
-        return (
-            f"<Search({self.data['fromDate']} to {self.data['toDate']}>"
-        )
+        return f"<Search({self.data['fromDate']} to {self.data['toDate']}>"
 
 
 async def main():
-
     terms = ["suicide"]
     exclude = ["bomb"]
     start = datetime(2022, 6, 1)
@@ -145,7 +145,14 @@ async def main():
     now = time.perf_counter()
 
     async with httpx.AsyncClient(timeout=None) as client:
-        search = Search(client=client, include_any=terms, exclude_all=exclude, start=start, end=end, limit=50)
+        search = Search(
+            client=client,
+            include_any=terms,
+            exclude_all=exclude,
+            start=start,
+            end=end,
+            limit=50,
+        )
         data = await search.get_all()
     print("Found: ", len(data))
 
@@ -165,5 +172,6 @@ async def main():
             writer.writerow(row)
 
     print(f"Finished in {time.perf_counter() - now}s")
+
 
 asyncio.run(main())

@@ -1,17 +1,18 @@
+import os
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import date, timedelta
 from io import BytesIO
-import os
+from time import perf_counter
+
 import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
 import requests
-from PIL import Image, UnidentifiedImageError
 from bs4 import BeautifulSoup, Tag
-from concurrent.futures import Future, ThreadPoolExecutor
-from time import perf_counter
+from PIL import Image, UnidentifiedImageError
 
-#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
 edition_ids = {
     "calcutta": "71",
@@ -33,9 +34,15 @@ def get_regions(image):
 
     regions = {}
     region_names = [
-        "Top Left", "Top Middle", "Top Right",
-        "Center Left", "Center Middle", "Center Right",
-        "Bottom Left", "Bottom Middle", "Bottom Right"
+        "Top Left",
+        "Top Middle",
+        "Top Right",
+        "Center Left",
+        "Center Middle",
+        "Center Right",
+        "Bottom Left",
+        "Bottom Middle",
+        "Bottom Right",
     ]
 
     for row in range(3):
@@ -52,7 +59,7 @@ def get_regions(image):
 
 def find_word_in_regions(regions):
     for region_name, region_image in regions.items():
-        text = pytesseract.image_to_string(region_image,  lang="eng")
+        text = pytesseract.image_to_string(region_image, lang="eng")
         if "suicide" in text.lower():
             return region_name
         else:
@@ -60,18 +67,18 @@ def find_word_in_regions(regions):
 
 
 def keyword_region(resp):
-    sp = BeautifulSoup(resp.content, 'html.parser')
-    for img in sp.find_all('img'):
-        if img.has_attr('usemap'):
+    sp = BeautifulSoup(resp.content, "html.parser")
+    for img in sp.find_all("img"):
+        if img.has_attr("usemap"):
             imgsrc = img["src"]
             if imgsrc:
                 imgresponse = requests.get(imgsrc)
-                print(f'region image {imgsrc}')
+                print(f"region image {imgsrc}")
                 image = Image.open(BytesIO(imgresponse.content))
                 regions = get_regions(image)
                 region = find_word_in_regions(regions)
                 if region:
-                    print(f'found keywords in region: {region}')
+                    print(f"found keywords in region: {region}")
                 return region
 
 
@@ -83,11 +90,13 @@ def get_title(imag):
     gray_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
 
     # Apply the thresholding with the provided values
-    _, binary_image = cv2.threshold(gray_image, 10, 255,
-                                    cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    _, binary_image = cv2.threshold(
+        gray_image, 10, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU
+    )
 
-    contours, _ = cv2.findContours(~binary_image, cv2.RETR_EXTERNAL,
-                                   cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        ~binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
 
     contour_heights = [cv2.boundingRect(c)[3] for c in contours]
     avg_height = sum(contour_heights) / len(contour_heights)
@@ -106,10 +115,10 @@ def get_title(imag):
         if h > avg_height:
             cv2.rectangle(blank_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             # Copy the bounding boxes with content from the original image
-            new_image[y:y + h, x:x + w] = open_cv_image[y:y + h, x:x + w]
+            new_image[y : y + h, x : x + w] = open_cv_image[y : y + h, x : x + w]
 
     tit = pytesseract.image_to_string(new_image)
-    tit = tit.replace('\n', ' ')
+    tit = tit.replace("\n", " ")
     tit = tit[0:50]
     return tit
 
@@ -117,13 +126,17 @@ def get_title(imag):
 def scrape(date_today, edition_name, edition_id, count):
     url = f"https://epaper.telegraphindia.com/{edition_name}/{date_today}/{edition_id}/Page-{str(count)}.html"
     response = requests.get(url)
-    print(f'page no: {count}\n')
+    print(f"page no: {count}\n")
     reg = keyword_region(response)
     soup = BeautifulSoup(response.content, "html.parser")
     showpop_elements = []
     for area in soup.find_all("area"):
         onclick = area.get("onclick")
-        if onclick and ("show_popclink" in onclick or "show_pophead" in onclick or "show_pop" in onclick):
+        if onclick and (
+            "show_popclink" in onclick
+            or "show_pophead" in onclick
+            or "show_pop" in onclick
+        ):
             showpop_elements.append(area)
 
     for showpop_element in showpop_elements:
@@ -143,7 +156,7 @@ def scrape(date_today, edition_name, edition_id, count):
             assert isinstance(img_element, Tag)
 
             if img_element:
-                img_src = img_element.get("src") 
+                img_src = img_element.get("src")
                 if img_src:
                     assert isinstance(img_src, str)
                     img_response = requests.get(img_src)
@@ -154,8 +167,10 @@ def scrape(date_today, edition_name, edition_id, count):
                         extracted_text = pytesseract.image_to_string(img, lang="eng")
                         # extracted_text = extracted_text.replace('\n', ' ')
                         # img_text = pytesseract.image_to_string(Image.open(BytesIO(response.content)))
-                        if any([keyword in extracted_text.lower() for keyword in keywords]):
-                            extracted_text = extracted_text.replace('\n', ' ')
+                        if any(
+                            [keyword in extracted_text.lower() for keyword in keywords]
+                        ):
+                            extracted_text = extracted_text.replace("\n", " ")
                             try:
                                 title = get_title(img)
                             except Exception as e:
@@ -173,7 +188,16 @@ def scrape(date_today, edition_name, edition_id, count):
                             #     print(f"Saved {image_name} to {page_folder} folder")
                             # print(str(lst[-1]))
                             lst.append(
-                                [date_today, edition_name, str(count), reg, title, extracted_text, image_url])
+                                [
+                                    date_today,
+                                    edition_name,
+                                    str(count),
+                                    reg,
+                                    title,
+                                    extracted_text,
+                                    image_url,
+                                ]
+                            )
                     except UnidentifiedImageError:
                         print(f"Failed to identify image")
                         continue
@@ -186,15 +210,15 @@ futures = []
 
 start = perf_counter()
 for i in range(30, 0, -1):
-# for i in range(1, 0, -1):
+    # for i in range(1, 0, -1):
     current_date = date.today() - timedelta(days=i)
     date_today = current_date.strftime("%Y-%m-%d")
 
     for edition_name, edition_id in edition_ids.items():
         for count in range(1, 14):
-                fut = executor.submit(scrape, date_today, edition_name, edition_id, count)
-                futures.append(fut)
-                print(f"Submitted {date_today}, {count}, {edition_id}, {edition_name}")
+            fut = executor.submit(scrape, date_today, edition_name, edition_id, count)
+            futures.append(fut)
+            print(f"Submitted {date_today}, {count}, {edition_id}, {edition_name}")
 
 executor.shutdown()
 
@@ -202,6 +226,6 @@ executor.shutdown()
 result_df = pd.DataFrame(lst, columns=df_columns)
 result_df = result_df.drop_duplicates()
 assert result_df is not None
-result_df.to_csv(f'telegraph.csv')
+result_df.to_csv(f"telegraph.csv")
 
 print(f"Finished in {perf_counter() - start}s")

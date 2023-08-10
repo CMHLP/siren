@@ -1,11 +1,13 @@
-from io import BytesIO
 import os
 import re
+from io import BytesIO
+
 import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
 from PIL import Image
+
 
 def process_images(images_folder):
     cwd = os.getcwd()
@@ -23,9 +25,15 @@ def process_images(images_folder):
 
         regions = {}
         region_names = [
-            "Top Left", "Top Middle", "Top Right",
-            "Center Left", "Center Middle", "Center Right",
-            "Bottom Left", "Bottom Middle", "Bottom Right"
+            "Top Left",
+            "Top Middle",
+            "Top Right",
+            "Center Left",
+            "Center Middle",
+            "Center Right",
+            "Bottom Left",
+            "Bottom Middle",
+            "Bottom Right",
         ]
 
         for row in range(3):
@@ -52,11 +60,13 @@ def process_images(images_folder):
         open_cv_image = open_cv_image[:, :, ::-1].copy()
         gray_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
 
-        _, binary_image = cv2.threshold(gray_image, 10, 255,
-                                        cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        _, binary_image = cv2.threshold(
+            gray_image, 10, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU
+        )
 
-        contours, _ = cv2.findContours(~binary_image, cv2.RETR_EXTERNAL,
-                                       cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            ~binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
         contour_heights = [cv2.boundingRect(c)[3] for c in contours]
         avg_height = sum(contour_heights) / len(contour_heights)
@@ -74,24 +84,28 @@ def process_images(images_folder):
             x, y, w, h = cv2.boundingRect(c)
             if h > avg_height:
                 cv2.rectangle(blank_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                new_image[y:y + h, x:x + w] = open_cv_image[y:y + h, x:x + w]
+                new_image[y : y + h, x : x + w] = open_cv_image[y : y + h, x : x + w]
 
         tit = pytesseract.image_to_string(new_image)
-        tit = tit.replace('\n', ' ')
+        tit = tit.replace("\n", " ")
         tit = tit[0:50]
         return tit
 
     for dirpath, dirnames, filenames in os.walk(images_folder):
-        for image_file_name in filenames:           
-            if not (image_file_name.endswith(".png") or image_file_name.endswith(".jpeg") or image_file_name.endswith(".jpg")):
+        for image_file_name in filenames:
+            if not (
+                image_file_name.endswith(".png")
+                or image_file_name.endswith(".jpeg")
+                or image_file_name.endswith(".jpg")
+            ):
                 print(f"Skipping non-image file: {image_file_name}")
                 continue
 
             image_path = os.path.join(dirpath, image_file_name)
             image = Image.open(image_path)
 
-            date_today, edition_name, _, page_number, _ = image_file_name.split('-')
-            page_number = re.sub('\D', '', page_number)
+            date_today, edition_name, _, page_number, _ = image_file_name.split("-")
+            page_number = re.sub("\D", "", page_number)
 
             print(f"Processing image file: {image_file_name}")
 
@@ -99,11 +113,13 @@ def process_images(images_folder):
             region = find_word_in_regions(regions)
 
             extracted_text = pytesseract.image_to_string(image, lang="eng")
-            keyword_found = any([keyword in extracted_text.lower() for keyword in keywords])
+            keyword_found = any(
+                [keyword in extracted_text.lower() for keyword in keywords]
+            )
 
             if keyword_found:
                 print(f"Keyword found in file {image_file_name}")
-                extracted_text = extracted_text.replace('\n', ' ')
+                extracted_text = extracted_text.replace("\n", " ")
                 try:
                     title = get_title(image)
                 except Exception as e:
@@ -124,7 +140,8 @@ def process_images(images_folder):
                     title,
                     extracted_text,
                     image_path,
-                ])
+                ]
+            )
 
     # Create a DataFrame from the list
     result_df = pd.DataFrame(lst, columns=df_columns)
