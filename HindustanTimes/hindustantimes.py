@@ -97,6 +97,7 @@ class Scraper(BaseScraper):
         assert df is not None, "Empty DataFrame!"
         buf = BytesIO()
         df.to_csv(buf)
+        buf.seek(0)
         fmt = "%d-%m-%Y"
         file = File(
             buf.getvalue(),
