@@ -19,7 +19,6 @@ jobs:
       run: |
         pip install poetry
         poetry install
-        poetry shell
 
     - name: Install ChromeDriver
       run: |
@@ -28,7 +27,7 @@ jobs:
         echo "CHROMEDRIVER_PATH=$(which chromedriver)" >> $GITHUB_ENV
 
     - name: Run scraper
-      run: python run.py hindustan_times
+      run: poetry run python run.py hindustan_times
 
     - name: Upload to Google Drive
       env:
