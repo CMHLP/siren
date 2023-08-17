@@ -1,9 +1,23 @@
-from os import getenv
+from os import getenv, environ
 from sys import argv
 from datetime import datetime, timedelta
-from HindustanTimes.hindustantimes import Scraper
+from HindustanTimes.hindustantimes import HTScraper
+from TOI.main import TOIScraper
 
-scrapers = {"hindustan_times": Scraper}
+from dotenv import load_dotenv
+
+import json
+from generics.cloud import Drive
+from generics.scraper import BaseScraper
+
+load_dotenv()
+
+scrapers: dict[str, type[BaseScraper]] = {
+    "hindustan_times": HTScraper,
+    "toi": TOIScraper,
+}
+
+
 target = scrapers.get(argv[1])
 
 
@@ -17,6 +31,7 @@ def get_dt(env: str, default: datetime):
 if target:
     end = get_dt("END", datetime.now())
     start = get_dt("START", end - timedelta(weeks=8))
-    target(start, end).scrape()
+    cloud = Drive(json.loads(environ["SERVICE_ACCOUNT_CREDENTIALS"]))
+    target(start, end, cloud).scrape()
 else:
-    raise ValueError("Invalid scraper!")
+    raise ValueError(f"Invalid scraper! Valid options: {', '.join(scrapers)}")

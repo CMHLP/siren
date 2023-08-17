@@ -20,7 +20,7 @@ from generics.cloud import Drive, File
 from generics.scraper import BaseScraper
 
 
-class Scraper(BaseScraper):
+class HTScraper(BaseScraper):
     def __init__(self, start: datetime, end: datetime):
         self.start = start
         self.end = end

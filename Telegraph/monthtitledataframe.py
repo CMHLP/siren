@@ -1,6 +1,6 @@
 import os
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from time import perf_counter
 
@@ -11,6 +11,9 @@ import pytesseract
 import requests
 from bs4 import BeautifulSoup, Tag
 from PIL import Image, UnidentifiedImageError
+from generics.cloud import Cloud
+
+from generics.scraper import BaseScraper
 
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
@@ -229,3 +232,13 @@ assert result_df is not None
 result_df.to_csv(f"telegraph.csv")
 
 print(f"Finished in {perf_counter() - start}s")
+
+
+class TGScraper(BaseScraper):
+    def __init__(self, start: datetime, end: datetime, cloud: Cloud):
+        self.start = start
+        self.end = end
+        self.cloud = cloud
+
+    def scrape(self):
+        ...

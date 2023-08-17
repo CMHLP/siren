@@ -1,8 +1,15 @@
 import asyncio
 import csv
+import os
+import json
+from io import StringIO
 import time
 from datetime import datetime
 from typing import Any
+
+
+from generics.cloud import Cloud, Drive, File
+from generics.scraper import BaseScraper
 
 import httpx
 import pydantic
@@ -136,42 +143,55 @@ class Search:
         return f"<Search({self.data['fromDate']} to {self.data['toDate']}>"
 
 
-async def main():
-    terms = ["suicide"]
-    exclude = ["bomb"]
-    start = datetime(2022, 6, 1)
-    end = datetime(2022, 9, 30)
+class TOIScraper(BaseScraper):
+    def __init__(self, start: datetime, end: datetime, cloud: Cloud):
+        self.start = start
+        self.end = end
+        self.cloud = cloud
 
-    now = time.perf_counter()
+    def scrape(self):
+        file = asyncio.run(self._scrape())
+        self.cloud.upload_file(file, "1tQs4MpKyco1F5UuxZnGO9Jj9IQHhGmEe")
 
-    async with httpx.AsyncClient(timeout=None) as client:
-        search = Search(
-            client=client,
-            include_any=terms,
-            exclude_all=exclude,
-            start=start,
-            end=end,
-            limit=50,
-        )
-        data = await search.get_all()
-    print("Found: ", len(data))
+    async def _scrape(self):
+        terms = ["suicide"]
+        exclude = ["bomb"]
 
-    headers = list(Article.__dataclass_fields__) + list(Edition.__dataclass_fields__)
+        now = time.perf_counter()
 
-    with open("out.csv", "w") as f:
+        async with httpx.AsyncClient(timeout=None) as client:
+            search = Search(
+                client=client,
+                include_any=terms,
+                exclude_all=exclude,
+                start=self.start,
+                end=self.end,
+                limit=50,
+            )
+            data = await search.get_all()
+        print("Found: ", len(data))
+
+        headers = list(Article.model_fields) + list(Edition.model_fields)
+
+        f = StringIO()
         writer = csv.writer(f)
         writer.writerow(headers)
         for article in data:
             row = []
-            for key in Article.__dataclass_fields__:
+            for key in Article.model_fields:
                 row.append(getattr(article, key, None))
 
-            for key in Edition.__dataclass_fields__:
+            for key in Edition.model_fields:
                 row.append(getattr(article.edition_details, key, None))
 
             writer.writerow(row)
 
-    print(f"Finished in {time.perf_counter() - now}s")
+        print(f"Finished in {time.perf_counter() - now}s")
 
+        f.seek(0)
 
-asyncio.run(main())
+        fmt = "%d-%m-%Y"
+        return File(
+            f.read().encode(),
+            f"TOI_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
+        )
