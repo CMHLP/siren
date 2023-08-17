@@ -27,11 +27,8 @@ jobs:
         poetry install
 
     - name: Run OCR script
-      run: poetry run python Telegraph/monthtitledataframe.py
-
-    - name: Upload to Google Drive
       env:
         SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.SERVICE_ACCOUNT_CREDENTIALS }}
-      run: |
-        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json
-        poetry run python Telegraph/upload_drive.py
+      run: poetry run python run.py telegraph
+
+

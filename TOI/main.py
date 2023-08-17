@@ -169,7 +169,7 @@ class TOIScraper(BaseScraper):
                 limit=50,
             )
             data = await search.get_all()
-        print("Found: ", len(data))
+        # print("Found: ", len(data))
 
         headers = list(Article.model_fields) + list(Edition.model_fields)
 
@@ -186,7 +186,7 @@ class TOIScraper(BaseScraper):
 
             writer.writerow(row)
 
-        print(f"Finished in {time.perf_counter() - now}s")
+        # print(f"Finished in {time.perf_counter() - now}s")
 
         f.seek(0)
 

@@ -2,6 +2,7 @@ from os import getenv, environ
 from sys import argv
 from datetime import datetime, timedelta
 from HindustanTimes.hindustantimes import HTScraper
+from Telegraph.monthtitledataframe import TGScraper
 from TOI.main import TOIScraper
 
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ load_dotenv()
 scrapers: dict[str, type[BaseScraper]] = {
     "hindustan_times": HTScraper,
     "toi": TOIScraper,
+    "telegraph": TGScraper,
 }
 
 
