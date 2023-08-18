@@ -38,7 +38,7 @@ class TGScraper(BaseScraper):
 
         # Loop through the last 30 days
 
-        executor = ThreadPoolExecutor(max_workers=4)
+        executor = ThreadPoolExecutor(max_workers=2)
         futures = []
 
         start = perf_counter()
