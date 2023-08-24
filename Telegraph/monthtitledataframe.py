@@ -1,5 +1,5 @@
 import os
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
 from time import perf_counter
@@ -32,30 +32,31 @@ class TGScraper(BaseScraper):
         self.end = end
         self.cloud = cloud
         self.items = []
+        self.executor = ThreadPoolExecutor()
 
     def scrape(self):
         # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
         # Loop through the last 30 days
 
-        executor = ThreadPoolExecutor(max_workers=2)
         futures = []
 
         start = perf_counter()
-        for i in range(30, 0, -1):
-            # for i in range(1, 0, -1):
-            current_date = date.today() - timedelta(days=i)
-            date_today = current_date.strftime("%Y-%m-%d")
-            print(f"Submitting {date_today}, {i}")
-
+        cur = self.start
+        while cur != self.end:
+            date_today = cur.strftime("%Y-%m-%d")
             for edition_name, edition_id in self.edition_ids.items():
                 for count in range(1, 14):
-                    fut = executor.submit(
+                    fut = self.executor.submit(
                         self.scrape_one, date_today, edition_name, edition_id, count
                     )
                     futures.append(fut)
+            cur += timedelta(days=1)
 
-        executor.shutdown()
+        print(f"Submitted {len(futures)} futures")
+        done, notdone = wait(futures)
+        print(f"Completed {len(done)} / {len(done)+len(notdone)} futures")
+        self.executor.shutdown()
 
         # Create a DataFrame from the list
         result_df = pd.DataFrame(self.items, columns=self.df_columns)
