@@ -43,6 +43,7 @@ class TGScraper(BaseScraper):
 
         start = perf_counter()
         cur = self.start
+        print(f"Starting scraper from {cur}")
         while cur != self.end:
             date_today = cur.strftime("%Y-%m-%d")
             for edition_name, edition_id in self.edition_ids.items():
