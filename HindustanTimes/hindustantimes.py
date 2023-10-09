@@ -4,6 +4,7 @@ import json
 import os
 import re
 from datetime import datetime
+from typing import Sequence
 
 import pandas as pd
 import requests
@@ -16,14 +17,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from yarl import URL
 
-from generics.cloud import Drive, File
+from generics.cloud import Cloud, Drive, File
 from generics.scraper import BaseScraper
 
 
 class HTScraper(BaseScraper):
-    def __init__(self, start: datetime, end: datetime):
+    def __init__(
+        self, start: datetime, end: datetime, cloud: Cloud, keywords: Sequence[str]
+    ):
         self.start = start
         self.end = end
+        self.cloud = cloud
+        self.keywords = keywords
         self.items = []
 
         chrome_driver_path = (
@@ -39,7 +44,6 @@ class HTScraper(BaseScraper):
         service = Service(executable_path=chrome_driver_path)
         self.browser = webdriver.Chrome(service=service, options=chrome_options)
         self.browser.set_page_load_timeout(60)
-        self.cloud = Drive(creds=json.loads(os.environ["SERVICE_ACCOUNT_CREDENTIALS"]))
 
     def scrape_one(self, ed_id, page_num):
         try:

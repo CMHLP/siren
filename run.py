@@ -5,6 +5,7 @@ from HindustanTimes.hindustantimes import HTScraper
 from Telegraph.monthtitledataframe import TGScraper
 from TOI.main import TOIScraper
 
+from tnie2.main import TNIEScraper
 from dotenv import load_dotenv
 
 import json
@@ -17,7 +18,10 @@ scrapers: dict[str, type[BaseScraper]] = {
     "hindustan_times": HTScraper,
     "toi": TOIScraper,
     "telegraph": TGScraper,
+    "tnie": TNIEScraper,
 }
+
+keywords = "suicide", "kill self"
 
 
 target = scrapers.get(argv[1])
@@ -25,7 +29,7 @@ target = scrapers.get(argv[1])
 
 class MockCloud(Cloud):
     def upload_file(self, file: File, folder: str):
-        with open("telegraph.csv", "wb") as f:
+        with open("data.csv", "wb") as f:
             f.write(file.buffer().read())
 
     def create_folder(self, folder: str, parent: str):
@@ -43,7 +47,7 @@ if target:
     end = get_dt("END", datetime.now())
     start = get_dt("START", end - timedelta(weeks=8))
     cloud = Drive(json.loads(environ["SERVICE_ACCOUNT_CREDENTIALS"]))
-    # cloud = MockCloud()
-    target(start, end, cloud).scrape()
+    cloud = MockCloud()
+    target(start, end, cloud, keywords).scrape()
 else:
     raise ValueError(f"Invalid scraper! Valid options: {', '.join(scrapers)}")

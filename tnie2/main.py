@@ -57,8 +57,7 @@ class Article(BaseModel):
 
     @property
     def url(self):
-        name = "-".join(self.name.split())
-        return f"https://epaper.newindianexpress.com/{self.issue_id}/{name}/#page/{self.pageNum}/{self.pageNum}"
+        return f"https://epaper.newindianexpress.com/{self.issue_id}"
 
     def __str__(self):
         return f"Article-{self.id}-{self.pageNum}-{self.issue_id}-{self.title_id}"
@@ -104,7 +103,10 @@ class TNIEScraper(BaseScraper):
     ) -> SearchResult:
         url = f"https://epaper.newindianexpress.com/search/issue/{issue_id}/{keyword}"
         resp = await session.get(url)
-        return SearchResult(**await resp.json())
+        try:
+            return SearchResult(**await resp.json())
+        except Exception as e:
+            return SearchResult(status=False)
 
     async def search_issue(
         self, issue_id: str | int, session: aiohttp.ClientSession
@@ -134,6 +136,7 @@ class TNIEScraper(BaseScraper):
         async with aiohttp.ClientSession() as session:
             issue_ids = await self.get_bulk_issue_ids(list(EDITIONS.keys()), session)
             data = await self.search_issues(issue_ids, session)
+            print(len(data))
             headers = list(Article.model_fields) + ["name", "url"]
             f = StringIO()
             writer = csv.writer(f)

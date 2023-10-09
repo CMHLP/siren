@@ -23,11 +23,12 @@ class TGScraper(BaseScraper):
         "north bengal": "73",
     }
 
-    keywords = ["suicide", "kills self", "ends life"]
-
     df_columns = ["date", "edition", "page", "region", "title", "text", "image_url"]
 
-    def __init__(self, start: datetime, end: datetime, cloud: Cloud):
+    def __init__(
+        self, start: datetime, end: datetime, cloud: Cloud, keywords: list[str]
+    ):
+        self.keywords = keywords
         self.start = start
         self.end = end
         self.cloud = cloud

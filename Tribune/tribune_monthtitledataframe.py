@@ -14,14 +14,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 chrome_driver_path = os.environ.get("CHROMEDRIVER_PATH")
 
 
-def main():
+def main(date: datetime):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     service = ChromeService(executable_path=chrome_driver_path)
     browser = webdriver.Chrome(service=service, options=options)
 
-    date_today = datetime.now().strftime("%d-%b-%Y")
+    date_today = date.strftime("%d-%b-%Y")
 
     browser.get(
         "https://www.readwhere.com/user/loginv3?client=rwconnectV3&xdm_key=xdm_key_1684737739&client_id=1640941005&main_window_url=https%3A%2F%2Fepaper.tribuneindia.com%2Fuser%2Fmypurchase"
@@ -101,4 +101,5 @@ def main():
     browser.quit()
 
 
-main()
+# main(datetime.now())
+main(datetime(2022, 9, 1))

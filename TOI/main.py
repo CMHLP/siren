@@ -5,7 +5,7 @@ import json
 from io import StringIO
 import time
 from datetime import datetime
-from typing import Any
+from typing import Any, Sequence
 
 
 from generics.cloud import Cloud, Drive, File
@@ -144,7 +144,10 @@ class Search:
 
 
 class TOIScraper(BaseScraper):
-    def __init__(self, start: datetime, end: datetime, cloud: Cloud):
+    def __init__(
+        self, start: datetime, end: datetime, cloud: Cloud, keywords: Sequence[str]
+    ):
+        self.keywords = keywords
         self.start = start
         self.end = end
         self.cloud = cloud
@@ -154,7 +157,7 @@ class TOIScraper(BaseScraper):
         self.cloud.upload_file(file, "1tQs4MpKyco1F5UuxZnGO9Jj9IQHhGmEe")
 
     async def _scrape(self):
-        terms = ["suicide"]
+        terms = self.keywords
         exclude = ["bomb"]
 
         now = time.perf_counter()
@@ -162,7 +165,7 @@ class TOIScraper(BaseScraper):
         async with httpx.AsyncClient(timeout=None) as client:
             search = Search(
                 client=client,
-                include_any=terms,
+                include_any=list(terms),
                 exclude_all=exclude,
                 start=self.start,
                 end=self.end,
