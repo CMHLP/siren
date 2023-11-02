@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from pydantic import BaseModel, ConfigDict
 from yarl import URL
 
-from generics.cloud import File
+from generics.cloud import Cloud, File
 
 
 class SearchResult(BaseModel):
@@ -43,9 +43,11 @@ class PartialArticle(BaseModel):
         url = self.base_url / f"search/issue/{self.id}/{keyword}"
         resp = await session.get(url)
         data = await resp.json()
-        for article in data["data"]:
-            article["published"] = self.published
-        return SearchResult(**await resp.json())
+        if "data" in data:
+            for article in data["data"]:
+                for field in self.model_fields:
+                    article[field] = getattr(self, field, None)
+        return SearchResult(**data)
 
     async def search_many(
         self, keywords: list[str], *, session: ClientSession
@@ -59,13 +61,17 @@ class PartialArticle(BaseModel):
 
 
 class Article(PartialArticle):
-    pageNum: str
+    pageNum: str | None = None
     excerpt: str
     issue_id: str
     title_id: str
 
+    @property
+    def url(self):
+        return self.base_url / str(self.issue_id)
 
-class ReadwhereScraper:
+
+class BaseReadwhereScraper:
     """Base implementation of a scraper for readwhere-based websites (TNIE, Tribune, etc).
 
     Parameters
@@ -87,9 +93,6 @@ class ReadwhereScraper:
 
     """
 
-    BASE_URL: URL
-    EDITIONS: dict[str, str]
-
     def __init__(
         self,
         start: datetime,
@@ -97,11 +100,15 @@ class ReadwhereScraper:
         keywords: list[str],
         *,
         session: ClientSession,
+        base_url: URL,
+        editions: dict[str, str],
     ):
         self.start = start
         self.end = end
         self.keywords = keywords
         self.session = session
+        self.base_url = base_url
+        self.editions = editions
 
     async def get_partial_articles(
         self,
@@ -135,11 +142,11 @@ class ReadwhereScraper:
         start = start or self.start
         end = end or self.end
         url = (
-            self.BASE_URL
+            self.base_url
             / f"viewer/publishdates/{edition_id}/{int(start.timestamp())}/{int(end.timestamp())}/json"
         )
         resp = await self.session.get(url)
-        return [PartialArticle(**i, base_url=self.BASE_URL) for i in await resp.json()]
+        return [PartialArticle(**i, base_url=self.base_url) for i in await resp.json()]
 
     async def search_edition(self, edition_id: int | str):
         partials = await self.get_partial_articles(edition_id)
@@ -152,12 +159,11 @@ class ReadwhereScraper:
 
     async def scrape(self):
         tasks: list[asyncio.Task[list[Article]]] = []
-        for edition_id, edition_name in self.EDITIONS.items():
+        for edition_id, edition_name in self.editions.items():
             task = asyncio.create_task(self.search_edition(edition_id))
             tasks.append(task)
         data = [article for chunk in await asyncio.gather(*tasks) for article in chunk]
-        print(data)
-        headers = list(Article.model_fields) + ["name", "url"]
+        headers = list(Article.model_fields) + ["url"]
         f = StringIO()
         writer = csv.writer(f)
         writer.writerow(headers)
@@ -172,3 +178,32 @@ class ReadwhereScraper:
             f.read().encode(),
             f"{self.__class__.__name__}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
         )
+
+
+class ReadwhereScraper:
+    BASE_URL: URL
+    EDITIONS: dict[str, str]
+
+    def __init__(
+        self, start: datetime, end: datetime, cloud: Cloud, keywords: list[str]
+    ):
+        self.start = start
+        self.end = end
+        self.cloud = cloud
+        self.keywords = keywords
+
+    async def runner(self):
+        async with ClientSession() as session:
+            scraper = BaseReadwhereScraper(
+                self.start,
+                self.end,
+                self.keywords,
+                session=session,
+                base_url=self.BASE_URL,
+                editions=self.EDITIONS,
+            )
+            return await scraper.scrape()
+
+    def scrape(self):
+        file = asyncio.run(self.runner())
+        self.cloud.upload_file(file, "test")

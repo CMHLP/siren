@@ -1,14 +1,9 @@
-import asyncio
-from datetime import datetime
-from aiohttp import ClientSession
 from yarl import URL
-from generics.cloud import Cloud
 
-from generics.scraper import BaseScraper
 from .core import ReadwhereScraper
 
 
-class _TNIEScraper(ReadwhereScraper):
+class TNIEScraper(ReadwhereScraper):
     BASE_URL = URL("https://epaper.newindianexpress.com")
     EDITIONS = {
         "6539": "The New Indian Express-Kollam",
@@ -43,22 +38,3 @@ class _TNIEScraper(ReadwhereScraper):
         "3467": "The New Indian Express-Belagavi",
         "3474": "The New Indian Express-Mangaluru",
     }
-
-
-class TNIEScraper(BaseScraper):
-    def __init__(
-        self, start: datetime, end: datetime, cloud: Cloud, keywords: list[str]
-    ):
-        self.start = start
-        self.end = end
-        self.cloud = cloud
-        self.keywords = keywords
-
-    async def ascrape(self):
-        async with ClientSession() as session:
-            return await _TNIEScraper(
-                self.start, self.end, list(self.keywords), session=session
-            ).scrape()
-
-    def scrape(self):
-        return asyncio.run(self.ascrape())

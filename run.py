@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from HindustanTimes.hindustantimes import HTScraper
 from Telegraph.monthtitledataframe import TGScraper
 from TOI.main import TOIScraper
-
-from tnie2.main import TNIEScraper
+from newsminute.scraper import NewsMinuteScraper
+from readwhere.tnie import TNIEScraper
+from readwhere.tribune import TribuneScraper
 from dotenv import load_dotenv
 
 import json
@@ -19,9 +20,11 @@ scrapers: dict[str, type[BaseScraper]] = {
     "toi": TOIScraper,
     "telegraph": TGScraper,
     "tnie": TNIEScraper,
+    "tribune": TribuneScraper,
+    "newsminute": NewsMinuteScraper,
 }
 
-keywords = "suicide", "kill self"
+keywords = ["suicide", "kill self"]
 
 
 target = scrapers.get(argv[1])
