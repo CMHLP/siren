@@ -1,32 +1,9 @@
-import mimetypes
-from io import BytesIO
-from pathlib import Path
 from typing import Any, Protocol
-
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-__all__ = "File", "Cloud"
-
-
-class File:
-    """Represents a file that can be uploaded to a Cloud platform.
-    This class normalizes the interface for files and in-memory buffers.
-    """
-
-    def __init__(self, data: bytes, name: str):
-        self.data = data
-        self.name = name
-        self.mimetype = mimetypes.guess_type(name)[0] or "application/pdf"
-
-    def buffer(self):
-        return BytesIO(self.data)
-
-    @classmethod
-    def from_path(cls, path: Path):
-        with path.open("wb") as f:
-            return File(f.read(), str(path))
+from .file import File
 
 
 class Cloud(Protocol):
@@ -50,7 +27,7 @@ class Drive(Cloud):
         }
         return self.service.files().create(body=body, fields="id").execute()
 
-    def upload_file(self, file: File, folder: str):
+    def upload_file(self, file: File, folder: str) -> dict[str, Any]:
         body = {"name": file.name, "parents": [folder]}
         media = MediaIoBaseUpload(file.buffer(), mimetype=file.mimetype)
         return (
@@ -58,3 +35,15 @@ class Drive(Cloud):
             .create(body=body, media_body=media, fields="id")
             .execute()
         )
+
+
+class FileSystem(Cloud):
+    def __init__(self, path: str):
+        self.path = path
+
+    def upload_file(self, file: File, folder: str):
+        with open(self.path, "wb") as f:
+            f.write(file.buffer().read())
+
+    def create_folder(self, folder: str, parent: str):
+        ...
