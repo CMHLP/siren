@@ -6,7 +6,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from .file import File
 
 
-class Cloud(Protocol):
+class CloudProto(Protocol):
     def upload_file(self, file: File, folder: str) -> Any:
         ...
 
@@ -14,7 +14,7 @@ class Cloud(Protocol):
         ...
 
 
-class Drive(Cloud):
+class Drive(CloudProto):
     def __init__(self, creds: dict[str, str]):
         self.creds = Credentials.from_service_account_info(creds)
         self.service = build("drive", "v3", credentials=self.creds)
@@ -37,7 +37,7 @@ class Drive(Cloud):
         )
 
 
-class FileSystem(Cloud):
+class Local(CloudProto):
     def __init__(self, path: str):
         self.path = path
 

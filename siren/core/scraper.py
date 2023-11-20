@@ -1,30 +1,35 @@
 import csv
-from typing import Protocol, TypeVar
 from datetime import datetime
-
-from httpx import AsyncClient
-from pydantic import BaseModel
-
 from io import StringIO
-
+from .http import ClientProto
+from .model import Model
 from .file import File
+from typing import Any, Protocol
 
 
-class ScraperProto(Protocol):
+class ScraperProto[T: Model](Protocol):
+    """
+    Scraper Protocol class. All scrapers should adhere to this protocol.
+
+    Attributes
+    ----------
+
+    start: :class:`datetime`
+        The earliest datetime to include.
+
+    end: :class:`datetime`
+        The latest datetime to include.
+
+    model: :class:type[`Model`]
+        The Model that represents a unit of scraped data (such as an Article)
+
+    """
+
     start: datetime
     end: datetime
     keywords: list[str]
-    SCRAPER_NAME: str
-
-    async def to_csv(self) -> File:
-        ...
-
-
-T = TypeVar("T", bound=BaseModel)
-
-class BaseScraper:
-
-    SCRAPER_NAME: str
+    model: type[T]
+    http: ClientProto
 
     def __init__(
         self,
@@ -32,27 +37,85 @@ class BaseScraper:
         start: datetime,
         end: datetime,
         keywords: list[str],
-        client: AsyncClient
+        model: type[T],
+        http: ClientProto,
+    ):
+        ...
+
+    async def scrape(self) -> list[T]:
+        """Scrape and return a list of `Model`."""
+        ...
+
+    async def to_file(self) -> File:
+        """Obtain a `File` containing the formatted scraped data."""
+        ...
+
+
+class BaseScraper[T: Model](ScraperProto[T]):
+    def __init__(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        keywords: list[str],
+        model: type[T],
+        http: ClientProto,
     ):
         self.start = start
         self.end = end
         self.keywords = keywords
-        self.client = client
+        self.model = model
+        self.http = http
+
+    async def scrape(self) -> list[T]:
+        raise NotImplementedError
+
+    async def to_csv(
+        self,
+        *,
+        include: set[str] = set(),
+        exclude: set[str] = set(),
+        aliases: dict[str, str] = {},
+    ) -> StringIO:
+        """
+        Return a CSV-formatted StringIO of the scraped data.
+
+        Parameters
+        ----------
+
+        include: :class:`set[str]`
+            Extra attributes to include. Defaults to an empty set.
+
+        exclude: :class:`set[str]`
+            Attributes to exclude. Defaults to an empty set.
+
+        aliases: :class:`dict[str, str]`
 
 
-    def models_to_csv(self, model: type[T], data: list[T]) -> File:
+        """
+
+        data = await self.scrape()
         file = StringIO()
+        fields = set(self.model.model_fields)
+        fields |= include
+        fields -= exclude
+        headers = [aliases.get(f, f) for f in fields]
         writer = csv.writer(file)
-        headers = list(model.model_fields)
         writer.writerow(headers)
+
         for article in data:
-            row: list[str | None] = []
-            for key in headers:
-                row.append(getattr(article, key, None))
+            row: list[Any] = []
+            for field in fields:
+                row.append(getattr(article, field, None))
             writer.writerow(row)
+
         file.seek(0)
+        return file
+
+    async def to_file(self) -> File:
+        file = await self.to_csv()
         fmt = "%d-%m-%Y"
         return File(
             file.read().encode(),
-            f"{self.SCRAPER_NAME}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
+            f"{self.__class__.__name__}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
         )

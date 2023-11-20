@@ -1,5 +1,16 @@
 from .file import File
-from .scraper import BaseScraper, ScraperProto
-from .cloud import Cloud, Drive, FileSystem
+from .cloud import CloudProto, Drive, Local
+from .model import Model
+from .http import ClientProto, ResponseProto
+from .scraper import ScraperProto
 
-__all__ = ("BaseScraper", "ScraperProto", "File", "Cloud", "Drive", "FileSystem")
+__all__ = (
+    "File",
+    "CloudProto",
+    "Drive",
+    "Local",
+    "Model",
+    "ClientProto",
+    "ResponseProto",
+    "ScraperProto",
+)
