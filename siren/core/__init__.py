@@ -2,7 +2,7 @@ from .file import File
 from .cloud import CloudProto, Drive, Local
 from .model import Model
 from .http import ClientProto, ResponseProto
-from .scraper import ScraperProto
+from .scraper import ScraperProto, BaseScraper
 
 __all__ = (
     "File",
@@ -13,4 +13,5 @@ __all__ = (
     "ClientProto",
     "ResponseProto",
     "ScraperProto",
+    "BaseScraper",
 )

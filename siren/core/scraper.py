@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 import csv
 from datetime import datetime
 from io import StringIO
@@ -37,36 +38,36 @@ class ScraperProto[T: Model](Protocol):
         start: datetime,
         end: datetime,
         keywords: list[str],
-        model: type[T],
         http: ClientProto,
     ):
         ...
 
+    @abstractmethod
     async def scrape(self) -> list[T]:
-        """Scrape and return a list of `Model`."""
         ...
 
+    @abstractmethod
     async def to_file(self) -> File:
-        """Obtain a `File` containing the formatted scraped data."""
         ...
 
 
-class BaseScraper[T: Model](ScraperProto[T]):
+class BaseScraper[T: Model](ABC, ScraperProto[T]):
+    model: type[T]
+
     def __init__(
         self,
         *,
         start: datetime,
         end: datetime,
         keywords: list[str],
-        model: type[T],
         http: ClientProto,
     ):
         self.start = start
         self.end = end
         self.keywords = keywords
-        self.model = model
         self.http = http
 
+    @abstractmethod
     async def scrape(self) -> list[T]:
         raise NotImplementedError
 
@@ -90,6 +91,13 @@ class BaseScraper[T: Model](ScraperProto[T]):
             Attributes to exclude. Defaults to an empty set.
 
         aliases: :class:`dict[str, str]`
+            A dictionary that maps attributes to their aliases for the headers. Defaults to an empty dict.
+
+        Returns
+        -------
+
+        :class:`io.StringIO`
+            A StringIO object.
 
 
         """
