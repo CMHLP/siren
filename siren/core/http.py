@@ -1,11 +1,15 @@
 from typing import Any, Protocol
 
 
-type JSON = dict[str, str]
+type JSON = dict[str, Any]
 
 
 class ResponseProto(Protocol):
     status_code: int
+
+    @property
+    def url(self) -> Any:
+        ...
 
     @property
     def text(self) -> str:
@@ -34,6 +38,10 @@ class ClientProto(Protocol):
         self,
         url: str,
         *,
+        content: Any = None,
+        data: Any = None,
+        files: Any = None,
+        json: Any = None,
         params: Any = None,
         headers: Any = None,
         cookies: Any = None,
