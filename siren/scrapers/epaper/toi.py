@@ -133,18 +133,14 @@ class Search:
             "Sec-Fetch-Site": "cross-site",
             "TE": "trailers",
         }
-        try:
-            resp = await self.client.post(
-                self.url, json=copy, headers=headers, timeout=None
-            )
-        except PoolTimeout:
-            logger.error(f"POOLTIMEOUT POST {self.url} \n {copy}")
-            return None
+        resp = await self.client.post(
+            self.url, json=copy, headers=headers, timeout=None
+        )
         data = resp.json()
         try:
             return SearchResult(**data, page=page_no)
-        except pydantic.ValidationError:
-            logger.error(f"Requested {resp.url} \n Could not validate: {data}")
+        except pydantic.ValidationError as e:
+            logger.error(f"{e}")
 
     async def get_all(self) -> list[Article]:
         initial = await self.get_page()
