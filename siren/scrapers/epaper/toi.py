@@ -5,9 +5,6 @@ from datetime import datetime
 from typing import Any
 import logging
 
-from httpx import PoolTimeout, Timeout
-
-
 from siren.core import File, BaseScraper, Model
 
 import pydantic
@@ -69,6 +66,8 @@ class SearchResult(pydantic.BaseModel):
 class Search:
     url = "https://epsearch.harnscloud.com/api/v1/epaper/search"
 
+    """Class to handle querying the search API and pagination"""
+
     def __init__(
         self,
         *,
@@ -117,6 +116,7 @@ class Search:
         return dt.strftime("%Y-%m-%d")
 
     async def get_page(self, page_no: int = 1):
+        """Return a `SearchResult` for a single page."""
         copy = dict(page=page_no)
         copy.update(self.data)
         headers = {
@@ -143,6 +143,7 @@ class Search:
             logger.error(f"{e}")
 
     async def get_all(self) -> list[Article]:
+        """Calculate total pages and return a list of the obtained `Article`"""
         initial = await self.get_page()
         if not initial:
             return []

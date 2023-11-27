@@ -1,7 +1,7 @@
 from typing import Any, Protocol
 
 
-type JSON = dict[str, Any]
+type JSON = dict[Any, Any]
 
 
 class ResponseProto(Protocol):
