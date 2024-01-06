@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime
 import json
 
+from io import StringIO
 from pydantic import ValidationError
 from siren.core import Model, BaseScraper
 from siren.utils import to_thread
@@ -13,7 +14,11 @@ from logging import getLogger
 
 logger = getLogger("siren")
 
-__all__ = ("MumbaiMirrorOnlineScraper", "BangaloreMirrorOnlineScraper")
+__all__ = (
+    "MumbaiMirrorOnlineScraper",
+    "BangaloreMirrorOnlineScraper",
+    "PuneMirrorOnlineScraper",
+)
 
 
 class MirrorOnlineArticle(Model):
@@ -76,6 +81,7 @@ class BaseMirrorOnlineScraper[T: MirrorOnlineArticle](BaseScraper[T]):
         try:
             resp = await self.http.get(str(url))
         except Exception as e:
+            logger.error(f"Ignoring exception while GET {url}: {e}")
             return None
         return await self.parse_article(resp.text, str(url))
 
@@ -110,3 +116,71 @@ class MumbaiMirrorOnlineScraper(BaseMirrorOnlineScraper[MirrorOnlineArticle]):
 class BangaloreMirrorOnlineScraper(BaseMirrorOnlineScraper[MirrorOnlineArticle]):
     BASE_URL = URL("https://bangaloremirror.indiatimes.com")
     model = MirrorOnlineArticle
+
+
+"""
+
+Pune Mirror Scraper
+
+This Edition of Mirror has a different architecture than the other two, so it has to be scraped seperately.
+
+"""
+
+
+class Metatags(Model):
+    articlePublishedTime: datetime
+
+
+class Snippet(Model):
+    metatags: Metatags
+
+
+class PuneMirrorArticle(Model):
+    cacheUrl: str
+    clicktrackUrl: str
+    content: str
+    contentNoFormatting: str
+    title: str
+    titleNoFormatting: str
+    formattedUrl: str
+    unescapedUrl: str
+    url: str
+    visibleUrl: str
+    richSnippet: Snippet
+
+    @property
+    def date(self):
+        return self.richSnippet.metatags.articlePublishedTime
+
+
+class PuneMirrorOnlineScraper(BaseScraper[PuneMirrorArticle]):
+    model = PuneMirrorArticle
+
+    async def scrape(self):
+        # TODO: Fully Automate this!
+        with open("data.json") as f:
+            data = json.load(f)
+        result: list[PuneMirrorArticle] = []
+        for item in data:
+            result.append(PuneMirrorArticle(**item))
+        return result
+
+    async def to_csv(
+        self,
+        *,
+        include: set[str] = set(),
+        exclude: set[str] = set(),
+        aliases: dict[str, str] = {},
+    ) -> StringIO:
+        include = {"date"}
+        exclude = {
+            "cacheUrl",
+            "clicktrackUrl",
+            "content",
+            "title",
+            "formattedUrl",
+            "unescapedUrl",
+            "visibleUrl",
+            "richSnippet",
+        }
+        return await super().to_csv(include=include, exclude=exclude, aliases=aliases)

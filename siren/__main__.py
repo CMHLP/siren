@@ -25,7 +25,7 @@ def strptime(string: str):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("scraper", choices=SCRAPERS.keys())
+parser.add_argument("scraper")
 parser.add_argument("--start", default=getenv("START"), type=strptime)
 parser.add_argument("--end", default=getenv("END"), type=strptime)
 parser.add_argument("--drive")
@@ -54,4 +54,9 @@ if Scraper := SCRAPERS.get(args.scraper):
 
 
 else:
-    print("That scraper was not found!")
+    print(
+        f"Could not find scraper {args.scraper}! (Please make sure the scraper class is in the __all__ of it's respective module.)"
+    )
+
+
+x: int = "test"

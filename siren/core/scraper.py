@@ -107,6 +107,8 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         fields = set(self.model.model_fields)
         fields |= include
         fields -= exclude
+        if f := getattr(self.model, "FIELDS", None):
+            fields = f
         headers = [aliases.get(f, f) for f in fields]
         writer = csv.writer(file)
         writer.writerow(headers)
@@ -114,7 +116,7 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         for article in data:
             row: list[Any] = []
             for field in fields:
-                row.append(getattr(article, field, None))
+                row.append(getattr(article, field, "- no data -"))
             writer.writerow(row)
 
         file.seek(0)
