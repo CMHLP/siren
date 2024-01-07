@@ -156,8 +156,9 @@ class PuneMirrorArticle(Model):
 class PuneMirrorOnlineScraper(BaseScraper[PuneMirrorArticle]):
     model = PuneMirrorArticle
 
-    async def scrape(self):
+    async def scrape(self) -> list[PuneMirrorArticle]:
         # TODO: Fully Automate this!
+        return []
         with open("data.json") as f:
             data = json.load(f)
         result: list[PuneMirrorArticle] = []

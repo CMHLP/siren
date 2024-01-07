@@ -71,7 +71,11 @@ class HTArticle(Model):
         cls, partial: HTPartialArticle, *, client: httpx.AsyncClient
     ) -> "HTArticle | None":
         url = f"https://epaper.hindustantimes.com/User/ShowArticleView?OrgId={partial.article_id}"
-        resp = await client.get(url)
+        try:
+            resp = await client.get(url)
+        except Exception as e:
+            logger.error(f"Ignoring exception while GET {url}: {e}")
+            return None
         json = resp.json()
         try:
             return cls(partial=partial, **json)
@@ -105,7 +109,9 @@ class HTArticle(Model):
 
     @property
     def headline(self):
-        return self.story_content[0].headlines[0]
+        if h := self.story_content[0].headlines:
+            return h[0]
+        return " - no data -"
 
     def __hash__(self):
         return hash(self.headline)
@@ -157,7 +163,8 @@ class HTScraper(BaseScraper[HTArticle]):
             for row in css.select(".table > tbody:nth-child(2) > tr"):
                 data: dict[str, Any] = {}
                 title = row.select_one("td > label")
-                assert title is not None, "Could not locate the title label!"
+                if not title:  # some articles are blank, ignore those
+                    continue
                 data["article_id"] = (
                     title.attrs["onclick"].split("','")[1].rstrip("' );")
                 )  # TODO: use regex

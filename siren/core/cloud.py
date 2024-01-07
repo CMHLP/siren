@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Protocol
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
@@ -38,8 +39,10 @@ class Drive(CloudProto):
 
 
 class Local(CloudProto):
-    def __init__(self, path: str):
+    def __init__(self, path: Path):
         self.path = path
+        if path.exists():
+            self.path = self.path.parent / f"copy-{self.path.name}"
 
     def upload_file(self, file: File, folder: str):
         with open(self.path, "wb") as f:
@@ -47,6 +50,3 @@ class Local(CloudProto):
 
     def create_folder(self, folder: str, parent: str):
         ...
-
-
-        

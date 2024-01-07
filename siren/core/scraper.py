@@ -127,4 +127,5 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         return File(
             file.read().encode(),
             f"{self.__class__.__name__}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
+            origin=self
         )
