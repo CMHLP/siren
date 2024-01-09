@@ -115,7 +115,10 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         for article in data:
             row: list[Any] = []
             for field in fields:
-                row.append(getattr(article, field, "- no data -"))
+                value: Any = getattr(article, field, "- no data -")
+                if isinstance(value, datetime):
+                    value = datetime.strftime(value, "%d/%m/%Y")
+                row.append(value)
             writer.writerow(row)
 
         file.seek(0)
