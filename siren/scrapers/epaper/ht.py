@@ -15,6 +15,38 @@ logger = getLogger("siren")
 
 
 class HTPartialArticle(Model):
+
+    """
+    Represents a Partial Article.
+
+    Attributes
+    ----------
+
+    article_id: :class:`str`
+        The ID of the article.
+
+    page_no: :class:`int`
+        The page number of the article.
+
+    edition_name: :class:`str`
+        The name of the edition this article was published in.
+
+    edition_date: :class:`datetime`
+        The datetime this edition was published on.
+
+    edition_id :class:`int`
+        The edition ID.
+
+    url: :class:`str`
+        The URL of this article.
+
+
+    Notes
+    -----
+    You may convert a HTPartialArticle to an HTArticle via HTArticle.from_partial
+
+    """
+
     article_id: str
     page_no: int
     edition_name: str
@@ -44,6 +76,12 @@ def _ed_dt_conv(raw: str | None):
 
 
 class HTArticle(Model):
+
+    """
+    Represents an Article.
+    These are generally created from partials via `HTArticle.from_partial`.
+    """
+
     FIELDS: ClassVar = (
         "url",
         "page_number",
@@ -70,6 +108,10 @@ class HTArticle(Model):
     async def from_partial(
         cls, partial: HTPartialArticle, *, client: httpx.AsyncClient
     ) -> "HTArticle | None":
+        """
+        Attempt to create and return an :class:`HTArticle` from a :class:`HTPartialArticle`.
+        Return None if unsuccessful.
+        """
         url = f"https://epaper.hindustantimes.com/User/ShowArticleView?OrgId={partial.article_id}"
         try:
             resp = await client.get(url)
@@ -148,6 +190,7 @@ class HTScraper(BaseScraper[HTArticle]):
         to_date: datetime | None = None,
         client: httpx.AsyncClient,
     ) -> list[HTPartialArticle]:
+        """Scrape the search page and return a list of :class:`HTPartialArticle`"""
         from_date = from_date or self.start
         to_date = to_date or self.end
         url = self.build_url(
@@ -190,6 +233,7 @@ class HTScraper(BaseScraper[HTArticle]):
         to_date: datetime | None = None,
         client: httpx.AsyncClient,
     ):
+        """Scrape a search page and return a list of :class:`HTArticle` from the partials."""
         tasks: list[asyncio.Task[HTArticle | None]] = []
         done: set[str] = set()
         for partial in await self._scrape_search(
