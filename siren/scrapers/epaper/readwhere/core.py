@@ -8,6 +8,29 @@ from siren.core import Model, ClientProto, BaseScraper
 
 
 class SearchResult(Model):
+    """
+    Represents a JSON search result from the search endpoint.
+
+    Attributes
+    ----------
+
+    status: :class:`bool`
+        Whether the search yielded results or not.
+
+    numFound: :class:`int | None`
+        The number of articles found, or None if the search was unsuccessful.
+
+    start: :class:`int | None`
+        The starting number of this page.
+
+    to: :class:`int | None`
+        The ending number of this page.
+
+    data: :class:`list[Article]`
+        The articles found by the search.
+
+    """
+
     status: bool
     numFound: int | None = None
     start: int | None = None
@@ -37,6 +60,7 @@ class PartialArticle(Model):
     base_url: URL
 
     async def search_one(self, keyword: str, *, session: ClientProto) -> SearchResult:
+        """Search a single issue and return a :class:`SearchResult`"""
         url = self.base_url / f"search/issue/{self.id}/{keyword}"
         resp = await session.get(str(url))
         data = resp.json()
@@ -112,7 +136,8 @@ class BaseReadwhereScraper(BaseScraper[Article]):
         resp = await self.http.get(str(url))
         return [PartialArticle(**i, base_url=self.BASE_URL) for i in resp.json()]
 
-    async def search_edition(self, edition_id: int | str):
+    async def search_edition(self, edition_id: int | str) -> list[Article]:
+        """Search an edition and return a list of :class:`Article`"""
         partials = await self.get_partial_articles(edition_id)
         ret: list[Article] = []
         for partial in partials:
