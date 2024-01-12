@@ -29,7 +29,6 @@ class ScraperProto[T: Model](Protocol):
     start: datetime
     end: datetime
     keywords: list[str]
-    model: type[T]
     http: ClientProto
 
     def __init__(
@@ -52,7 +51,6 @@ class ScraperProto[T: Model](Protocol):
 
 
 class BaseScraper[T: Model](ABC, ScraperProto[T]):
-    model: type[T]
 
     def __init__(
         self,
@@ -104,10 +102,13 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
 
         data = await self.scrape()
         file = StringIO()
-        fields = set(self.model.model_fields)
+        if not data:
+            return file
+        model = type(data[0]) 
+        fields = set(model.model_fields)
         fields |= include
         fields -= exclude
-        fields = getattr(self.model, "FIELDS", None) or fields
+        fields = getattr(model, "FIELDS", None) or fields
         headers = [aliases.get(f, f) for f in fields]
         writer = csv.writer(file)
         writer.writerow(headers)

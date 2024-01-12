@@ -163,8 +163,6 @@ class HTScraper(BaseScraper[HTArticle]):
     BASE_URL = URL("https://epaper.hindustantimes.com/Home/Search")
     EDITIONS = list(range(60))
 
-    model = HTArticle
-
     def build_url(
         self,
         *,

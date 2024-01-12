@@ -91,8 +91,6 @@ class TIEScraper(BaseScraper[TIEArticle]):
     Scraper for the Times of India E-Paper.
     """
 
-    model = TIEArticle
-
     async def search(self, issue_id: str, keyword: str) -> TIESearch | None:
         """
         Search an issue for a keyword. Return a :class:`TIESearch` if the search was successful, else :class:`None`.
