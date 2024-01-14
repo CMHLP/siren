@@ -1,4 +1,4 @@
-name: TIEScraper 
+name: Run All Scrapers 
 
 on: workflow_dispatch
 
@@ -23,7 +23,7 @@ jobs:
     - name: Run scraper
       env:
         SERVICE_ACCOUNT_CREDENTIALS: ${ secrets.SERVICE_ACCOUNT_CREDENTIALS }
-      run: poetry run python -m siren epaper.tie.TIEScraper --keywords suicide 
+      run: poetry run python -m siren all --keywords suicide 
 
     - name: Upload to Google Drive
       env:

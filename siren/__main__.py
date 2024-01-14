@@ -84,7 +84,9 @@ if __name__ == "__main__":
     if Scraper := SCRAPERS.get(args.scraper):
         if args.gen_workflow:
             with open("template.yml") as f:
-                content = f.read().format(name=Scraper.__name__, args=args.gen_workflow)
+                content = f.read().format(
+                    scraper=args.scraper, name=Scraper.__name__, args=args.gen_workflow
+                )
             with open(f".github/workflows/{Scraper.__name__}.yml", "w") as f:
                 f.write(content)
             sys.exit()
