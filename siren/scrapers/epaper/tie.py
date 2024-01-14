@@ -20,13 +20,13 @@ PRODUCTS = {
     "Delhi": 4273,
     "EYE": 5881,
     "LOCKDOWN SPECIAL": 5882,
-    "Chandigarh": 4285,
     "Kolkata": 4291,
     "Jaipur": 4288,
+    "Chandigarh": 4285,
 }
 
 HEADERS = {
-    "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1ZjNjYzYyNDQ2ZGQ2YjNlOWI1ZTc2YjgiLCJleHAiOjE3MDQ5MDEyNzUsImlhdCI6MTcwNDgxNDg3NSwiVXNlci1BZ2VudCI6Ik1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NDsgcnY6MTIyLjApIEdlY2tvLzIwMTAwMTAxIEZpcmVmb3gvMTIyLjAiLCJwZXJtaXNzaW9ucyI6IltdIn0.YP6aXhqtdLCocAfvsbZzWwddhS6yJczqR1SDOMjUEUV2DGtYRCOJn-0AUHMisih768nx74jZxsXD6LaJNrMR4Q"
+    "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1ZjNjYzYyNDQ2ZGQ2YjNlOWI1ZTc2YjgiLCJleHAiOjE3MDUyNDE3NzEsImlhdCI6MTcwNTE1NTM3MSwiVXNlci1BZ2VudCI6Ik1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NDsgcnY6MTIyLjApIEdlY2tvLzIwMTAwMTAxIEZpcmVmb3gvMTIyLjAiLCJwZXJtaXNzaW9ucyI6IltdIn0.WsFqAIgduAuklzx8EdtuF8DCwyCGnTv2Bd_70dwFiZH_LBK46WU6xdkh95GbhVm0F0G4Pm983gUUl-vzFAo3cw"
 }
 
 

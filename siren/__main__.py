@@ -1,6 +1,8 @@
 import asyncio
+import sys
 import json
 import argparse
+import time
 import logging
 from os import getenv
 from datetime import datetime, timezone
@@ -34,10 +36,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("scraper")
 parser.add_argument("--start", default=getenv("START"), type=strptime)
 parser.add_argument("--end", default=getenv("END"), type=strptime)
-parser.add_argument("--drive")
+parser.add_argument("--drive", action="store_true")
 parser.add_argument("--out", default="data.csv")
 parser.add_argument("--keywords", nargs="+", default=["suicide", "kill self"])
 parser.add_argument("--timeout", type=int, default=None)
+parser.add_argument("--gen-workflow")
 
 args = parser.parse_args()
 
@@ -55,6 +58,7 @@ def upload_file(file: File):
 
 
 async def run(Scraper: type[ScraperProto[Any]]) -> File | None:
+    start = time.perf_counter()
     async with AsyncClient(timeout=Timeout(args.timeout)) as client:
         try:
             scraper = Scraper(
@@ -63,6 +67,8 @@ async def run(Scraper: type[ScraperProto[Any]]) -> File | None:
             return await scraper.to_file()
         except Exception as e:
             logger.error("\n".join(traceback.format_exception(e)))
+    end = time.perf_counter()
+    logger.info(f"{Scraper.__name__} completed in {end - start}s.")
 
 
 async def run_all():
@@ -74,16 +80,22 @@ async def run_all():
             upload_file(f)
 
 
-if Scraper := SCRAPERS.get(args.scraper):
-    file = asyncio.run(run(Scraper))
-    if file:
-        upload_file(file)
+if __name__ == "__main__":
+    if Scraper := SCRAPERS.get(args.scraper):
+        if args.gen_workflow:
+            with open("template.yml") as f:
+                content = f.read().format(name=Scraper.__name__, args=args.gen_workflow)
+            with open(f".github/workflows/{Scraper.__name__}.yml", "w") as f:
+                f.write(content)
+            sys.exit()
+        file = asyncio.run(run(Scraper))
+        if file:
+            upload_file(file)
 
+    elif args.scraper == "all":
+        asyncio.run(run_all())
 
-elif args.scraper == "all":
-    asyncio.run(run_all())
-
-else:
-    print(
-        f"Could not find scraper {args.scraper}! (Please make sure the scraper class is in the __all__ of it's respective module.)"
-    )
+    else:
+        print(
+            f"Could not find scraper {args.scraper}! (Please make sure the scraper class is in the __all__ of it's respective module.)"
+        )
