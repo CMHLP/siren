@@ -6,7 +6,7 @@ __all__ = ("TNIEScraper",)
 
 
 class TNIEScraper(BaseReadwhereScraper):
-    BASE_URL = URL("https://epaper.newindianexpress.com")
+    BASE_URL = URL("https://epaper.newindianexpress.com/")
     EDITIONS = {
         "6539": "The New Indian Express-Kollam",
         "3469": "The New Indian Express-Kozhikode",

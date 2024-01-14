@@ -3,8 +3,12 @@ import asyncio
 from datetime import datetime
 from pydantic import ConfigDict
 from yarl import URL
+from logging import getLogger
 
 from siren.core import Model, ClientProto, BaseScraper
+
+
+logger = getLogger("siren")
 
 
 class SearchResult(Model):
@@ -59,10 +63,16 @@ class PartialArticle(Model):
     published: datetime
     base_url: URL
 
-    async def search_one(self, keyword: str, *, session: ClientProto) -> SearchResult:
+    async def search_one(
+        self, keyword: str, *, session: ClientProto
+    ) -> SearchResult | None:
         """Search a single issue and return a :class:`SearchResult`"""
         url = self.base_url / f"search/issue/{self.id}/{keyword}"
-        resp = await session.get(str(url))
+        try:
+            resp = await session.get(str(url))
+        except Exception as e:
+            logger.error(f"Ignoring exception {e}")
+            return None
         data = resp.json()
         if "data" in data:
             for article in data["data"]:
@@ -74,11 +84,11 @@ class PartialArticle(Model):
         self, keywords: list[str], *, session: ClientProto
     ) -> list[SearchResult]:
         """Runs :class:`PartialArticle.search_one` concurrently for each given keyword."""
-        tasks: list[asyncio.Task[SearchResult]] = []
+        tasks: list[asyncio.Task[SearchResult | None]] = []
         for term in keywords:
             task = asyncio.create_task(self.search_one(term, session=session))
             tasks.append(task)
-        return [sr for sr in await asyncio.gather(*tasks) if sr.status]
+        return [sr for sr in await asyncio.gather(*tasks) if sr and sr.status]
 
 
 class Article(PartialArticle):
