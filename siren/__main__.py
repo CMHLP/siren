@@ -16,15 +16,6 @@ from httpx import AsyncClient, Timeout
 
 
 logger = logging.getLogger("siren")
-handler = logging.FileHandler(".log")
-dt_fmt = "%Y-%m-%d %H:%M:%S"
-formatter = logging.Formatter(
-    "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
-
 load_dotenv()
 
 
@@ -40,9 +31,21 @@ parser.add_argument("--drive", action="store_true")
 parser.add_argument("--out", default="data.csv")
 parser.add_argument("--keywords", nargs="+", default=["suicide", "kill self"])
 parser.add_argument("--timeout", type=int, default=None)
+parser.add_argument("--log-file", default=None)
+parser.add_argument("--log-level", type=int, default=logging.DEBUG)
 parser.add_argument("--gen-workflow")
 
 args = parser.parse_args()
+
+logger.setLevel(args.log_level)
+if args.log_file:
+    handler = logging.FileHandler(".log")
+    dt_fmt = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(
+        "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 def upload_file(file: File):
