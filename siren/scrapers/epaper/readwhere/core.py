@@ -59,7 +59,7 @@ class PartialArticle(Model):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    id: str
+    id: int | str
     published: datetime
     base_url: URL
 
@@ -92,7 +92,7 @@ class PartialArticle(Model):
 
 
 class Article(PartialArticle):
-    pageNum: str | None = None
+    pageNum: int | str | None = None
     excerpt: str
     issue_id: str
     title_id: str

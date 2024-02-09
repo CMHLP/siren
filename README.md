@@ -8,12 +8,18 @@ E-Papers (siren/scrapers/epaper)
 - [X] Times Of India (toi.py)
 - [X] Mirror (toi.py)
 - [X] Hindustan Times (ht.py) 
-- [] Telegraph
-- [] The Hindu
-- [X] The Indian Express
+- [ ] Telegraph
+- [ ] The Hindu
+- [ ] The Indian Express
 
 Online Publications
 - [X] Mirror
-- [] News Minute
-- [] Telegraph
+- [X] News Minute
+- [ ] Telegraph
 
+# TODO
+- Siren next edition
+- Suicide NCBI data
+- Setup Automation
+- Deinstitutionalisation
+- Public Archive 404 recordlist

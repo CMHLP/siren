@@ -39,7 +39,7 @@ args = parser.parse_args()
 
 logger.setLevel(args.log_level)
 if args.log_file:
-    handler = logging.FileHandler(".log")
+    handler = logging.FileHandler(args.log_file)
     dt_fmt = "%Y-%m-%d %H:%M:%S"
     formatter = logging.Formatter(
         "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
