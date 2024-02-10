@@ -10,7 +10,7 @@ E-Papers (siren/scrapers/epaper)
 - [X] Hindustan Times (ht.py) 
 - [ ] Telegraph
 - [ ] The Hindu
-- [ ] The Indian Express
+- [X] The Indian Express
 
 Online Publications
 - [X] Mirror
@@ -18,7 +18,7 @@ Online Publications
 - [ ] Telegraph
 
 # TODO
-- Siren next edition
+- Siren next edition (telegraph, hindu, newsminute)
 - Suicide NCBI data
 - Setup Automation
 - Deinstitutionalisation
