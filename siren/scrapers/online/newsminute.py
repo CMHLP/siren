@@ -84,7 +84,6 @@ class NMScraper(BaseScraper[NMArticle]):
         pages = (initial.total // self.PAGE_SIZE) - 1
         tasks: list[asyncio.Task[SearchResult]] = []
         for i in range(1, pages - 1):
-            logger.debug(f"{i}, {i*self.PAGE_SIZE, initial.total, pages}")
             task = asyncio.create_task(
                 self.fetch(q=q, limit=self.PAGE_SIZE, offset=self.PAGE_SIZE * i)
             )
