@@ -11,11 +11,10 @@ from pydantic import Field, BeforeValidator, ValidationError
 __all__ = ("HTScraper",)
 
 
-logger = getLogger("siren")
+logger = getLogger(__name__)
 
 
 class HTPartialArticle(Model):
-
     """
     Represents a Partial Article.
 
@@ -76,7 +75,6 @@ def _ed_dt_conv(raw: str | None):
 
 
 class HTArticle(Model):
-
     """
     Represents an Article.
     These are generally created from partials via `HTArticle.from_partial`.

@@ -8,11 +8,9 @@ from .file import File
 
 
 class CloudProto(Protocol):
-    def upload_file(self, file: File, folder: str) -> Any:
-        ...
+    def upload_file(self, file: File, folder: str) -> Any: ...
 
-    def create_folder(self, folder: str, parent: str) -> Any:
-        ...
+    def create_folder(self, folder: str, parent: str) -> Any: ...
 
 
 class Drive(CloudProto):
@@ -48,5 +46,4 @@ class Local(CloudProto):
         with open(self.path, "wb") as f:
             f.write(file.buffer().read())
 
-    def create_folder(self, folder: str, parent: str):
-        ...
+    def create_folder(self, folder: str, parent: str): ...

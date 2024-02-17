@@ -8,7 +8,7 @@ from logging import getLogger
 from siren.core import Model, ClientProto, BaseScraper
 
 
-logger = getLogger("siren")
+logger = getLogger(__name__)
 
 
 class SearchResult(Model):
@@ -66,7 +66,27 @@ class PartialArticle(Model):
     async def search_one(
         self, keyword: str, *, session: ClientProto
     ) -> SearchResult | None:
-        """Search a single issue and return a :class:`SearchResult`"""
+        """
+        Search a single issue and return a :class:`SearchResult`
+
+        Parameters
+        ----------
+
+        keyword: :class:`str`
+            The keyword to search.
+
+        session: :class:`ClientProto`
+            The HTTP Client to use.
+
+
+        Returns
+        -------
+
+        :class:`SearchResult | None`
+
+        A `SearchResult` if successful, else `None`
+
+        """
         url = self.base_url / f"search/issue/{self.id}/{keyword}"
         try:
             resp = await session.get(str(url))

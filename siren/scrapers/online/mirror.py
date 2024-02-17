@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup, Tag
 from logging import getLogger
 
 
-logger = getLogger("siren")
+logger = getLogger(__name__)
 
 __all__ = (
     "MumbaiMirrorOnlineScraper",

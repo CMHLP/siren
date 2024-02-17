@@ -40,27 +40,31 @@ args = parser.parse_args()
 logger.setLevel(args.log_level)
 if args.log_file:
     handler = logging.FileHandler(args.log_file)
-    dt_fmt = "%Y-%m-%d %H:%M:%S"
-    formatter = logging.Formatter(
-        "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
-    )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+else:
+    handler = logging.StreamHandler()
+dt_fmt = "%Y-%m-%d %H:%M:%S"
+formatter = logging.Formatter(
+    "[{asctime}] [{levelname:<8}] {name}: {message}", dt_fmt, style="{"
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 def upload_file(file: File):
     if args.drive:
-        cloud = Drive(json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")))
+        cloud = Drive(
+            json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
+        )
     else:
         path = Path(args.out)
         if s := file.origin:
             path = path.parent / f"{s.__class__.__name__}-{path.name}"
         cloud = Local(path)
 
-    cloud.upload_file(file, args.drive)
+    cloud.upload_file(file, folder=getenv("FOLDER", ""))
 
 
-async def run(Scraper: type[ScraperProto[Any]]) -> File | None:
+async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
     start = time.perf_counter()
     async with AsyncClient(timeout=Timeout(args.timeout)) as client:
         try:
@@ -77,11 +81,20 @@ async def run(Scraper: type[ScraperProto[Any]]) -> File | None:
 async def run_all():
     tasks: list[asyncio.Task[File | None]] = []
     for _, Scraper in SCRAPERS.items():
-        tasks.append(asyncio.create_task(run(Scraper)))
+        tasks.append(asyncio.create_task(run_scraper(Scraper)))
     for file in asyncio.as_completed(tasks):
         if f := await file:
             upload_file(f)
 
+
+try:
+    import uvloop
+
+    run = uvloop.run
+except ModuleNotFoundError:
+    import asyncio
+
+    run = asyncio.run
 
 if __name__ == "__main__":
     if Scraper := SCRAPERS.get(args.scraper):
@@ -93,12 +106,12 @@ if __name__ == "__main__":
             with open(f".github/workflows/{Scraper.__name__}.yml", "w") as f:
                 f.write(content)
             sys.exit()
-        file = asyncio.run(run(Scraper))
+        file = run(run_scraper(Scraper))
         if file:
             upload_file(file)
 
     elif args.scraper == "all":
-        asyncio.run(run_all())
+        run(run_all())
 
     else:
         print(

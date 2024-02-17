@@ -11,7 +11,7 @@ import pydantic
 
 from siren.core.http import ClientProto
 
-logger = logging.getLogger("siren")
+logger = logging.getLogger(__name__)
 
 __all__ = ("TOIScraper",)
 

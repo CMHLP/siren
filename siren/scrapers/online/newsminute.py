@@ -9,7 +9,7 @@ from pydantic import Field
 
 __all__ = ("NMScraper",)
 
-logger = getLogger("siren")
+logger = getLogger(__name__)
 
 
 class Story(Model):
