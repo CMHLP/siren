@@ -1,0 +1,33 @@
+name: TIEScraper 
+
+on: workflow_dispatch
+
+jobs:
+  scrape_and_upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        pip install poetry
+        poetry install
+
+    - name: Run scraper
+      env:
+        SERVICE_ACCOUNT_CREDENTIALS: ${ secrets.SERVICE_ACCOUNT_CREDENTIALS }
+      run: poetry run python -m siren epaper.tie.TIEScraper --keywords suicide 
+
+    - name: Upload to Google Drive
+      env:
+        SERVICE_ACCOUNT_CREDENTIALS: ${ secrets.SERVICE_ACCOUNT_CREDENTIALS }
+      run: |
+        echo "$SERVICE_ACCOUNT_CREDENTIALS" > service_account.json  
+        # python HindustanTimes/upload_drive.py  
