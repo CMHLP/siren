@@ -28,14 +28,22 @@ parser.add_argument("scraper")
 parser.add_argument("--start", default=getenv("START"), type=strptime)
 parser.add_argument("--end", default=getenv("END"), type=strptime)
 parser.add_argument("--drive", action="store_true")
-parser.add_argument("--out", default="data.csv")
-parser.add_argument("--keywords", nargs="+", default=["suicide", "kill self"])
+parser.add_argument("--out", default=None)
+parser.add_argument("--keywords", nargs="+", default=None)
 parser.add_argument("--timeout", type=int, default=None)
 parser.add_argument("--log-file", default=None)
 parser.add_argument("--log-level", type=int, default=logging.DEBUG)
 parser.add_argument("--gen-workflow")
 
 args = parser.parse_args()
+
+if args.keywords is None:
+    keywords = Path("./keywords.json")
+    if not keywords.exists():
+        raise RuntimeError(
+            "Please supply keywords with the --keywords argument or a JSON file (keywords.json)"
+        )
+    args.keywords = keywords.read_text()
 
 logger.setLevel(args.log_level)
 if args.log_file:
@@ -56,9 +64,12 @@ def upload_file(file: File):
             json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
         )
     else:
-        path = Path(args.out)
-        if s := file.origin:
-            path = path.parent / f"{s.__class__.__name__}-{path.name}"
+        if o := args.out:
+            path = Path(o)
+        elif s := file.origin:
+            path = Path(f"{s.__class__.__name__}-data.csv")
+        else:
+            path = Path("data.csv")
         cloud = Local(path)
 
     cloud.upload_file(file, folder=getenv("FOLDER", ""))

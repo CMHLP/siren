@@ -13,6 +13,5 @@ class DummyModel(Model):
 class DummyScraper(BaseScraper[DummyModel]):
 
     async def scrape(self):
-        logger.debug("DummyScraper DEBUG")
-        logger.info("DummyScraper INFO")
+        logger.debug(self.keywords)
         return [DummyModel(data="Dummy Sample A"), DummyModel(data="Dummy Sample B")]

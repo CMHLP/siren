@@ -8,15 +8,15 @@ class ResponseProto(Protocol):
     status_code: int
 
     @property
-    def url(self) -> Any:
-        ...
+    def content(self) -> bytes: ...
 
     @property
-    def text(self) -> str:
-        ...
+    def url(self) -> Any: ...
 
-    def json(self) -> JSON:
-        ...
+    @property
+    def text(self) -> str: ...
+
+    def json(self) -> JSON: ...
 
 
 class ClientProto(Protocol):
@@ -31,8 +31,7 @@ class ClientProto(Protocol):
         follow_redirects: Any = None,
         timeout: Any = None,
         extensions: Any = None,
-    ) -> ResponseProto:
-        ...
+    ) -> ResponseProto: ...
 
     async def post(
         self,
@@ -49,5 +48,4 @@ class ClientProto(Protocol):
         follow_redirects: Any = None,
         timeout: Any = None,
         extensions: Any = None,
-    ) -> ResponseProto:
-        ...
+    ) -> ResponseProto: ...
