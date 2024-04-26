@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any
 from dotenv import load_dotenv
 import traceback
-from siren.core import ScraperProto, Local, Drive, File
+from siren.core import ScraperProto, Local, Drive, File, HTTP
 from siren import SCRAPERS
-from httpx import AsyncClient, Timeout
+from httpx import Timeout, AsyncClient
 
 
 logger = logging.getLogger("siren")
@@ -20,7 +20,7 @@ load_dotenv()
 
 
 def strptime(string: str):
-    return datetime.strptime(string, "%d-%m-%Y").replace(tzinfo=timezone.utc)
+    return datetime.strptime(string, "%d/%m/%Y").replace(tzinfo=timezone.utc)
 
 
 parser = argparse.ArgumentParser()
@@ -33,6 +33,7 @@ parser.add_argument("--keywords", nargs="+", default=None)
 parser.add_argument("--timeout", type=int, default=None)
 parser.add_argument("--log-file", default=None)
 parser.add_argument("--log-level", type=int, default=logging.DEBUG)
+parser.add_argument("--max-concurrency", type=int, default=None)
 parser.add_argument("--gen-workflow")
 
 args = parser.parse_args()
@@ -80,7 +81,10 @@ async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
     async with AsyncClient(timeout=Timeout(args.timeout)) as client:
         try:
             scraper = Scraper(
-                start=args.start, end=args.end, keywords=args.keywords, http=client
+                start=args.start,
+                end=args.end,
+                keywords=args.keywords,
+                http=HTTP(client, max_concurrency=args.max_concurrency),
             )
             return await scraper.to_file()
         except Exception as e:
