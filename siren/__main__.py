@@ -44,7 +44,7 @@ if args.keywords is None:
         raise RuntimeError(
             "Please supply keywords with the --keywords argument or a JSON file (keywords.json)"
         )
-    args.keywords = keywords.read_text()
+    args.keywords = json.loads(keywords.read_text())
 
 logger.setLevel(args.log_level)
 if args.log_file:
@@ -86,6 +86,7 @@ async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
                 keywords=args.keywords,
                 http=HTTP(client, max_concurrency=args.max_concurrency),
             )
+            logger.info(f"Scraping {scraper} with keywords: {args.keywords}")
             return await scraper.to_file()
         except Exception as e:
             logger.error("\n".join(traceback.format_exception(e)))
