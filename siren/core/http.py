@@ -1,3 +1,4 @@
+from collections.abc import Coroutine
 from typing import Any, Protocol, Literal
 from asyncio import BoundedSemaphore
 from logging import getLogger
@@ -66,14 +67,26 @@ class OptionalSemaphore(BoundedSemaphore):
             return await super().acquire()
         return True
 
+    def release(self) -> None:
+        if self._block:
+            return super().release()
+
 
 class HTTP:
-    """Wrapper for the HTTP client for fine-grained control over request concurrency and such"""
+    """Wrapper for the HTTP client for fine-grained control over request concurrency"""
 
     def __init__(self, client: ClientProto, *, max_concurrency: int | None = None):
         self.client = client
         self.max_concurrency = max_concurrency
-        self._sem = OptionalSemaphore(max_concurrency)
+        self.sem = OptionalSemaphore(max_concurrency)
+
+    async def limit_concurrency[T](self, coro: Coroutine[Any, Any, T]) -> T:
+        await self.sem.acquire()
+        try:
+            resp = await coro
+        finally:
+            self.sem.release()
+        return resp
 
     async def get(
         self,
@@ -87,19 +100,18 @@ class HTTP:
         timeout: Any = None,
         extensions: Any = None,
     ) -> ResponseProto:
-        await self._sem.acquire()
-        resp = await self.client.get(
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            auth=auth,
-            follow_redirects=follow_redirects,
-            timeout=timeout,
-            extensions=extensions,
+        return await self.limit_concurrency(
+            self.client.get(
+                url,
+                params=params,
+                headers=headers,
+                cookies=cookies,
+                auth=auth,
+                follow_redirects=follow_redirects,
+                timeout=timeout,
+                extensions=extensions,
+            )
         )
-        self._sem.release()
-        return resp
 
     async def post(
         self,
@@ -117,20 +129,19 @@ class HTTP:
         timeout: Any = None,
         extensions: Any = None,
     ) -> ResponseProto:
-        await self._sem.acquire()
-        resp = await self.client.post(
-            url,
-            content=content,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            auth=auth,
-            follow_redirects=follow_redirects,
-            timeout=timeout,
-            extensions=extensions,
+        return await self.limit_concurrency(
+            self.client.post(
+                url,
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                params=params,
+                headers=headers,
+                cookies=cookies,
+                auth=auth,
+                follow_redirects=follow_redirects,
+                timeout=timeout,
+                extensions=extensions,
+            )
         )
-        self._sem.release()
-        return resp

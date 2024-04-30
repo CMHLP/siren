@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 import csv
 from datetime import datetime
 from io import StringIO
-from .http import ClientProto
+from .http import HTTP
 from .model import Model
 from .file import File
 from typing import Any, Protocol
@@ -29,7 +29,7 @@ class ScraperProto[T: Model](Protocol):
     start: datetime
     end: datetime
     keywords: list[str]
-    http: ClientProto
+    http: HTTP
 
     def __init__(
         self,
@@ -37,17 +37,14 @@ class ScraperProto[T: Model](Protocol):
         start: datetime,
         end: datetime,
         keywords: list[str],
-        http: ClientProto,
-    ):
-        ...
+        http: HTTP,
+    ): ...
 
     @abstractmethod
-    async def scrape(self) -> list[T]:
-        ...
+    async def scrape(self) -> list[T]: ...
 
     @abstractmethod
-    async def to_file(self) -> File:
-        ...
+    async def to_file(self) -> File: ...
 
 
 class BaseScraper[T: Model](ABC, ScraperProto[T]):
@@ -58,7 +55,7 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         start: datetime,
         end: datetime,
         keywords: list[str],
-        http: ClientProto,
+        http: HTTP,
     ):
         self.start = start
         self.end = end
@@ -104,7 +101,7 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         file = StringIO()
         if not data:
             return file
-        model = type(data[0]) 
+        model = type(data[0])
         fields = set(model.model_fields)
         fields |= include
         fields -= exclude
@@ -131,5 +128,5 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         return File(
             file.read().encode(),
             f"{self.__class__.__name__}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
-            origin=self
+            origin=self,
         )
