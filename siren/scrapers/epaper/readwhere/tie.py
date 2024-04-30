@@ -1,10 +1,11 @@
 from yarl import URL
 from .core import BaseReadwhereScraper
+from .ocr import BaseReadwhereScraperOCR
 
-__all__ = ("TIEScraper",)
+__all__ = ("TIEScraper", "TIEScraperOCR")
 
 
-class TIEScraper(BaseReadwhereScraper):
+class TIE:
     BASE_URL = URL("https://epaper.indianexpress.com/")
     EDITIONS = {
         "271": "CHANDIGARH",
@@ -16,3 +17,9 @@ class TIEScraper(BaseReadwhereScraper):
         "236": "MUMBAI",
         "226": "DELHI",
     }
+
+
+class TIEScraper(TIE, BaseReadwhereScraper): ...
+
+
+class TIEScraperOCR(TIE, BaseReadwhereScraperOCR): ...
