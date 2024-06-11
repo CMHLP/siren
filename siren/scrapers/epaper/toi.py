@@ -85,7 +85,9 @@ class Article(Model):
 
     @property
     def image(self):
-        year, month, day, *_ = self.edition_details.date.timetuple()
+        year, _month, _day, *_ = self.edition_details.date.timetuple()
+        day = f"{_day:02}"
+        month = f"{_month:02}"
         page = f"{int(self.page):03}"
         return f"https://asset.harnscloud.com/PublicationData/{self.publication_code}/{self.edition_details.edition_code}/{year}/{month}/{day}/Page/{day}_{month}_{year}_{page}_{self.edition_details.edition_code}.jpg"
 
