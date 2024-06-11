@@ -1,15 +1,19 @@
+from __future__ import annotations
+from asyncio import Task
 import asyncio
-from datetime import datetime, timedelta
-from io import BytesIO
-import sys
 import re
-from time import perf_counter
-from PIL import Image
-import pytesseract
-from playwright.async_api import Browser, async_playwright
+from datetime import timedelta, datetime
 import logging
-from yarl import URL
 from siren.core import BaseScraper, Model
+from yarl import URL
+from typing import TYPE_CHECKING
+from bs4 import BeautifulSoup
+
+from siren.core.http import ResponseProto
+
+
+if TYPE_CHECKING:
+    from siren.core import HTTP
 
 
 __all__ = ("TGScraper",)
@@ -17,143 +21,124 @@ __all__ = ("TGScraper",)
 logger = logging.getLogger(__name__)
 
 
+BASE_URL = URL("https://epaper.telegraphindia.com")
 EDITIONS = {"calcutta": 71, "north bengal": 72, "south bengal": 73}
+IMAGE_REGEX = re.compile(r"show_pop\('(\d+)','(\d+)','(\d+)'\)")
+
+
+class TGPaper:
+    def __init__(self, edition: str, edition_id: int, date: datetime, *, http: HTTP):
+        self.edition = edition
+        self.edition_id = edition_id
+        self.date = date
+        self.http = http
+
+    async def scrape(self, page: int = 1):
+        url = str(
+            BASE_URL
+            / self.edition
+            / self.date.strftime("%Y-%m-%d")
+            / str(self.edition_id)
+            / f"Page-{page}.html"
+        )
+        resp = await self.http.get(url)
+        tasks: list[Task[TGArticle]] = []
+        html = resp.text
+        soup = BeautifulSoup(html, "html.parser")
+        pages = 0
+        if _element := soup.select_one("#totalpages"):
+            if _value := _element.get("value"):
+                assert isinstance(_value, str)
+                pages = int(_value)
+        for match in IMAGE_REGEX.finditer(html):
+            paper_id, article_id, _ = match.groups()
+            textview_url = str(
+                BASE_URL
+                / "textview"
+                / paper_id
+                / article_id
+                / f"{self.edition_id}.html"
+            )
+            task = asyncio.create_task(
+                TGArticle.from_textview(
+                    textview_url, page=page, page_url=url, paper=self, pages=pages
+                )
+            )
+            tasks.append(task)
+        return await asyncio.gather(*tasks)
+
+    async def search(self, keywords: list[str]):
+        initial = await self.scrape()
+        pages = initial[0].pages
+        tasks: list[Task[list[TGArticle]]] = []
+        for i in range(2, pages + 1):
+            task = asyncio.create_task(self.scrape(i))
+            tasks.append(task)
+        articles = [
+            *initial,
+            *[a for chunk in await asyncio.gather(*tasks) for a in chunk],
+        ]
+
+        def has_keyword(article: TGArticle) -> bool:
+            for keyword in keywords:
+                if (article.title and keyword in article.title.lower()) or (
+                    keyword in article.body.lower()
+                ):
+                    return True
+            return False
+
+        return list(filter(has_keyword, articles))
 
 
 class TGArticle(Model):
-    page: int
+
     date: datetime
+    title: str | None
     body: str
-    edition: str
     url: str
-
-
-class TGPage(Model):
-    articles: list[str]
-    number: int
-    date: datetime
-    edition: str
-    url: str
+    page: int
+    page_url: str
     pages: int
+
+    @classmethod
+    async def from_textview(
+        cls, url: str, *, page: int, page_url: str, paper: TGPaper, pages: int
+    ):
+        """
+        Constructs a `TGArticle` from a BeautifulSoup instance containing an textview page.
+
+        """
+        resp = await paper.http.get(url)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        _title = soup.select_one(".haedlinesstory > b:nth-child(1)")
+        title = _title.text if _title else None
+        body = "\n".join([t.text for t in soup.select(".storyview-div p")])
+
+        return cls(
+            date=paper.date,
+            title=title,
+            body=body,
+            url=url,
+            page=page,
+            page_url=page_url,
+            pages=pages,
+        )
+
+    def __repr__(self) -> str:
+        return f"<TGArticle title={self.title}, body={self.body}, page={self.page}, url={self.url}>"
 
 
 class TGScraper(BaseScraper[TGArticle]):
 
-    BASE_URL = URL("https://epaper.telegraphindia.com/")
-
-    IMAGE_REGEX = re.compile(r"\('(\d+)','(\d+)','(\d+)'\)")
-
     async def scrape(self) -> list[TGArticle]:
-        async with async_playwright() as pw:
-            firefox = pw.firefox
-            browser = await firefox.launch(headless=True)
+        tasks: list[Task[list[TGArticle]]] = []
+        TEMP_FIX = (
+            ("calcutta", 71),
+        )  # FIXME: text view is only available for calcutta for now
+        for ed_name, ed_id in TEMP_FIX:
             cur = self.start
-            tasks: list[asyncio.Task[list[TGPage]]] = []
-            while cur < self.end:
-                for edition in EDITIONS:
-                    task = asyncio.create_task(
-                        self.search_paper(edition, cur, browser=browser)
-                    )
-                    tasks.append(task)
+            while cur <= self.end:
+                paper = TGPaper(ed_name, ed_id, cur, http=self.http)
+                tasks.append(asyncio.create_task(paper.search(keywords=self.keywords)))
                 cur += timedelta(days=1)
-            articles: list[TGArticle] = []
-            chunks = await asyncio.gather(*tasks)
-            for chunk in chunks:
-                for page in chunk:
-                    for text in page.articles:
-                        articles.append(
-                            TGArticle(
-                                page=page.number,
-                                date=page.date,
-                                body=text,
-                                edition=page.edition,
-                                url=page.url,
-                            )
-                        )
-            return articles
-
-    async def scan_image(self, url: str) -> str | None:
-        resp = await self.http.get(url)
-        data = resp.content
-
-        def _thread() -> str:
-            image = Image.open(BytesIO(data))
-            image.save(f"sample.jpg")
-            return pytesseract.image_to_string(image, lang="eng")
-
-        text = await asyncio.to_thread(_thread)
-        return text
-
-    async def search_paper(
-        self, edition: str, date: datetime, *, browser: Browser
-    ) -> list[TGPage]:
-        logger.info(f"Searching EPaper {edition} {date}")
-        initial = await self.fetch_page(
-            edition=edition, page_num=1, date=date, browser=browser
-        )
-        if not initial:
-            return []
-        tasks: list[asyncio.Task[TGPage | None]] = []
-        for i in range(2, initial.pages + 1):
-            task = asyncio.create_task(
-                self.fetch_page(edition=edition, date=date, page_num=i, browser=browser)
-            )
-            tasks.append(task)
-            await task  # NOTE: remove to increase concurrency
-
-        results = [initial, *await asyncio.gather(*tasks)]
-        return [page for page in results if page and page.articles]
-
-    async def fetch_page(
-        self, edition: str, date: datetime, page_num: int, *, browser: Browser
-    ) -> TGPage | None:
-        url = (
-            self.BASE_URL
-            / edition
-            / date.strftime("%Y-%m-%d")
-            / str(EDITIONS[edition])
-            / f"Page-{page_num}.html"
-        )
-        page = await browser.new_page()
-        try:
-            await page.goto(str(url), timeout=120000, wait_until="domcontentloaded")
-        except Exception as e:
-            logger.error(f"Ignoring exception {e}\n-> Page: {url}")
-            return None
-        loc = await page.locator(
-            "#outdivd1 > map:nth-child(2) > map:nth-child(1) > *"
-        ).all()
-        tasks: list[asyncio.Task[str | None]] = []
-        start = perf_counter()
-        for mapping in loc:
-            if event := await mapping.get_attribute("onclick"):
-                if m := self.IMAGE_REGEX.search(event):
-                    url = (
-                        self.BASE_URL
-                        / "epaperimages"
-                        / date.strftime("%d%m%Y")
-                        / f"{m.group(2)}.jpg"
-                    )
-                    task = asyncio.create_task(self.scan_image(str(url)))
-                    tasks.append(task)
-                else:
-                    logger.error(f"Could not find IDs in mapping!")
-            else:
-                logger.error("No mappings found!")
-        matches = list(filter(None, await asyncio.gather(*tasks)))
-        logger.info(
-            f"Finished OCR for {edition} {page_num} in {perf_counter() - start}s ({len(tasks)} tasks)"
-        )
-        pages_tag = await page.locator(
-            ".countR1 > span:nth-child(3) > b:nth-child(1)"
-        ).first.text_content()
-        pages = int(pages_tag) if pages_tag else 0
-        await page.close()
-        return TGPage(
-            articles=matches,
-            number=page_num,
-            date=date,
-            edition=edition,
-            url=str(url),
-            pages=pages,
-        )
+        return [a for chunk in await asyncio.gather(*tasks) for a in chunk]
