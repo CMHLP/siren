@@ -9,7 +9,7 @@ E-Papers (siren/scrapers/epaper)
 - [x] Times Of India (toi.py)
 - [x] Mirror (toi.py)
 - [x] Hindustan Times (ht.py)
-- [ ] Telegraph
+- [x] Telegraph
 - [ ] The Hindu
 - [x] The Indian Express
 
