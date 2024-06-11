@@ -20,7 +20,7 @@ load_dotenv()
 
 
 def strptime(string: str):
-    return datetime.strptime(string, "%d/%m/%Y").replace(tzinfo=timezone.utc)
+    return datetime.strptime(string, "%d-%m-%Y").replace(tzinfo=timezone.utc)
 
 
 parser = argparse.ArgumentParser()
