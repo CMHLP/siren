@@ -81,7 +81,7 @@ class BaseMirrorOnlineScraper[T: MirrorOnlineArticle](BaseScraper[T]):
         try:
             resp = await self.http.get(str(url))
         except Exception as e:
-            logger.error(f"Ignoring exception while GET {url}: {e}")
+            logger.error(e)
             return None
         return await self.parse_article(resp.text, str(url))
 

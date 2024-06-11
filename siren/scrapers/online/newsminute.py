@@ -69,7 +69,6 @@ class NMScraper(BaseScraper[NMArticle]):
 
     async def fetch(self, *, q: str, limit: int, offset: int) -> SearchResult:
         url = self.build_url(q=q, limit=limit, offset=offset)
-        logger.debug(f"GET {url}")
         resp = await self.http.get(str(url))
         data = resp.json()
         if data.get("error"):

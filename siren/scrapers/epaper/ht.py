@@ -3,7 +3,6 @@ from yarl import URL
 from bs4 import BeautifulSoup
 from datetime import datetime
 import httpx
-from json import dump
 import asyncio
 from siren.core import BaseScraper, Model
 from logging import getLogger
@@ -115,13 +114,13 @@ class HTArticle(Model):
         try:
             resp = await client.get(url)
         except Exception as e:
-            logger.error(f"Ignoring exception while GET {url}: {e}")
+            logger.error(e)
             return None
         json = resp.json()
         try:
             return cls(partial=partial, **json)
         except ValidationError as e:
-            logger.error(f"Ignoring Exception: {e}")
+            logger.error(e)
 
     @property
     def thumbnail(self) -> str | None:
