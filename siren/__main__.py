@@ -1,5 +1,5 @@
 import asyncio
-import sys
+import tomllib
 import json
 import argparse
 import time
@@ -13,42 +13,57 @@ import traceback
 from siren.core import ScraperProto, Local, Drive, File, HTTP
 from siren import SCRAPERS
 from httpx import Timeout, AsyncClient
+from pydantic import BaseModel
 
 
 logger = logging.getLogger("siren")
 load_dotenv()
 
 
+class Config(BaseModel):
+    scraper: str
+    keywords: list[str]
+    ignore_keywords: list[str]
+    start: datetime
+    end: datetime
+    log_level: int = logging.DEBUG
+    log_file: str | None = None
+    max_concurrency: int | None = None
+    timeout: int | None = None
+    cloud: bool = False
+    out: str | None = None
+
+
 def strptime(string: str):
-    return datetime.strptime(string, "%d-%m-%Y").replace(tzinfo=timezone.utc)
+    return datetime.strptime(string, "%Y-%m-%d").replace(tzinfo=timezone.utc)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("scraper")
-parser.add_argument("--start", default=getenv("START"), type=strptime)
-parser.add_argument("--end", default=getenv("END"), type=strptime)
-parser.add_argument("--drive", action="store_true")
+parser.add_argument("--scraper")
+parser.add_argument("--start", type=strptime)
+parser.add_argument("--end", type=strptime)
 parser.add_argument("--out", default=None)
-parser.add_argument("--keywords", nargs="+", default=None)
+parser.add_argument("--keywords", nargs="+", default=[])
+parser.add_argument("--ignore-keywords", nargs="+", default=[])
 parser.add_argument("--timeout", type=int, default=None)
 parser.add_argument("--log-file", default=None)
 parser.add_argument("--log-level", type=int, default=logging.DEBUG)
 parser.add_argument("--max-concurrency", type=int, default=None)
 parser.add_argument("--gen-workflow")
+parser.add_argument("--config", default=None)
 
 args = parser.parse_args()
 
-if args.keywords is None:
-    keywords = Path("./keywords.json")
-    if not keywords.exists():
-        raise RuntimeError(
-            "Please supply keywords with the --keywords argument or a JSON file (keywords.json)"
-        )
-    args.keywords = json.loads(keywords.read_text())
+if fp := args.config:
+    with open(fp, "rb") as f:
+        config = Config(**tomllib.load(f))
+else:
+    config = Config(**args.__dict__)
 
-logger.setLevel(args.log_level)
-if args.log_file:
-    handler = logging.FileHandler(args.log_file)
+
+logger.setLevel(config.log_level)
+if config.log_file:
+    handler = logging.FileHandler(config.log_file)
 else:
     handler = logging.StreamHandler()
 dt_fmt = "%Y-%m-%d %H:%M:%S"
@@ -60,12 +75,12 @@ logger.addHandler(handler)
 
 
 def upload_file(file: File):
-    if args.drive:
+    if config.cloud:
         cloud = Drive(
             json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
         )
     else:
-        if o := args.out:
+        if o := config.out:
             path = Path(o)
         elif s := file.origin:
             path = Path(f"{s.__class__.__name__}-data.csv")
@@ -78,20 +93,22 @@ def upload_file(file: File):
 
 async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
     start = time.perf_counter()
-    async with AsyncClient(timeout=Timeout(args.timeout)) as client:
+    file = None
+    async with AsyncClient(timeout=Timeout(config.timeout)) as client:
         try:
             scraper = Scraper(
-                start=args.start,
-                end=args.end,
-                keywords=args.keywords,
-                http=HTTP(client, max_concurrency=args.max_concurrency),
+                start=config.start,
+                end=config.end,
+                keywords=config.keywords,
+                http=HTTP(client, max_concurrency=config.max_concurrency),
             )
-            logger.info(f"Scraping {scraper} with keywords: {args.keywords}")
-            return await scraper.to_file()
+            logger.info(f"Scraping {scraper} with keywords: {config.keywords}")
+            file = await scraper.to_file()
         except Exception as e:
             logger.error("\n".join(traceback.format_exception(e)))
     end = time.perf_counter()
     logger.info(f"{Scraper.__name__} completed in {end - start}s.")
+    return file
 
 
 async def run_all():
@@ -113,23 +130,15 @@ except ModuleNotFoundError:
     run = asyncio.run
 
 if __name__ == "__main__":
-    if Scraper := SCRAPERS.get(args.scraper):
-        if args.gen_workflow:
-            with open("template.yml") as f:
-                content = f.read().format(
-                    scraper=args.scraper, name=Scraper.__name__, args=args.gen_workflow
-                )
-            with open(f".github/workflows/{Scraper.__name__}.yml", "w") as f:
-                f.write(content)
-            sys.exit()
+    if Scraper := SCRAPERS.get(config.scraper):
         file = run(run_scraper(Scraper))
         if file:
             upload_file(file)
 
-    elif args.scraper == "all":
+    elif config.scraper == "all":
         run(run_all())
 
     else:
         print(
-            f"Could not find scraper {args.scraper}! (Please make sure the scraper class is in the __all__ of it's respective module.)"
+            f"Could not find scraper {config.scraper}! (Please make sure the scraper class is in the __all__ of it's respective module.)"
         )
