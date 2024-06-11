@@ -97,7 +97,7 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
 
         """
 
-        data = await self.scrape()
+        data = self.clean(await self.scrape())
         file = StringIO()
         if not data:
             return file
@@ -121,6 +121,9 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
 
         file.seek(0)
         return file
+
+    def clean(self, data: list[T]):
+        return data
 
     async def to_file(self) -> File:
         file = await self.to_csv()
