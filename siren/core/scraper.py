@@ -1,11 +1,28 @@
 from abc import abstractmethod, ABC
 import csv
-from datetime import datetime
+from datetime import datetime, date
 from io import StringIO
 from .http import HTTP
 from .model import Model
 from .file import File
 from typing import Any, Protocol
+
+
+def serialize_dt(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d")
+
+
+def transform(item: Any) -> str:
+    """
+    Transform any value into a string.
+    Use this to customize serializations of particular types in the output.
+
+    """
+    match item:
+        case datetime() | date():
+            return item.strftime("%Y-%m-%d")
+        case _:
+            return str(item)
 
 
 class ScraperProto[T: Model](Protocol):
@@ -114,9 +131,8 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
             row: list[Any] = []
             for field in fields:
                 value: Any = getattr(article, field, "- no data -")
-                if isinstance(value, datetime):
-                    value = datetime.strftime(value, "%d/%m/%Y")
-                row.append(value)
+                transformed = transform(value)
+                row.append(transformed)
             writer.writerow(row)
 
         file.seek(0)
