@@ -9,8 +9,6 @@ from yarl import URL
 from typing import TYPE_CHECKING
 from bs4 import BeautifulSoup
 
-from siren.core.http import ResponseProto
-
 
 if TYPE_CHECKING:
     from siren.core import HTTP
