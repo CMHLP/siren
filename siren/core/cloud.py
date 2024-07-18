@@ -88,3 +88,6 @@ class Local(CloudProto):
             f.write(file.buffer().read())
 
     def create_folder(self, folder: str, parent: str): ...
+
+    def upload(self, file: File):
+        self.upload_file(file, "")
