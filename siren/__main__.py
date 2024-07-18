@@ -108,13 +108,12 @@ async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
 
 
 async def run_all():
-    return
     tasks: list[asyncio.Task[File | None]] = []
     for _, Scraper in SCRAPERS.items():
         tasks.append(asyncio.create_task(run_scraper(Scraper)))
     for file in asyncio.as_completed(tasks):
         if f := await file:
-            upload_file(f)
+            cloud.upload(f)
 
 
 try:
