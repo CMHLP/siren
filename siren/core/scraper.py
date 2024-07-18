@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 import csv
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from io import StringIO
 from .http import HTTP
 from .model import Model
@@ -143,9 +143,13 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
 
     async def to_file(self) -> File:
         file = await self.to_csv()
-        fmt = "%d-%m-%Y"
+        fmt = "%Y-%m-%d"
+        if (self.end - self.start) <= timedelta(days=1):
+            daterange = self.end.strftime(fmt)
+        else:
+            daterange = f"{self.start.strftime(fmt)}_{self.end.strftime(fmt)}"
         return File(
             file.read().encode(),
-            f"{self.__class__.__name__}_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
+            f"{self.__class__.__name__}_{daterange}.csv",
             origin=self,
         )

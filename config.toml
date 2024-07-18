@@ -1,12 +1,14 @@
-scraper = "dummy.DummyScraper"
-# scraper = "epaper.readwhere.tie.TIEScraperOCR"
+scraper = "epaper.readwhere.tie.TIEScraperOCR"
 keywords = ["suicide", "kill self", "ends life", "hang self", "found dead"]
 ignore_keywords = ["suicide bomb"]
 start = "2024-06-10"
 end = "2024-06-11"
 log_file = ".log"
 # log_level
-# max_concurrency = 1
+max_concurrency = 50
 # timeout = 1000
-# cloud = true
 # out = "data.csv"
+
+[cloud]
+enabled = true
+root_folder_id = "1LAP6cwvR658hWVdVzI-FQ6eCQj5U3vIY"

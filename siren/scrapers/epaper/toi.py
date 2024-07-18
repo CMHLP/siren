@@ -246,4 +246,5 @@ class TOIScraper(BaseScraper[Article]):
         return File(
             f.read().encode(),
             f"TOI_{self.start.strftime(fmt)}_{self.end.strftime(fmt)}.csv",
+            origin=self,
         )

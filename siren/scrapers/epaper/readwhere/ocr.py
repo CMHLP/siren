@@ -2,13 +2,12 @@ from __future__ import annotations
 from .core import BaseReadwhereScraper, PartialArticle
 from datetime import datetime
 from siren.core import Model, ClientProto
-from typing import Self, no_type_check
+from typing import ClassVar, Self, no_type_check
 from PIL import Image
 from io import BytesIO
 import asyncio
 import logging
 import pytesseract  # pyright: ignore[reportMissingTypeStubs]
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,26 +21,27 @@ class PageChunk(Model):
 
     async def search(
         self, *, client: ClientProto, keywords: list[str]
-    ) -> tuple[Self, list[str]]:
+    ) -> tuple[Self, str]:
         """Return a list of strings found from the keywords list"""
         resp = await client.get(self.url)
         buf = BytesIO(resp.content)
         image = Image.open(buf)  # pyright: ignore[reportUnknownMemberType]
+        image = image.convert("L")
+        logger.info(f"Running OCR on {image.width}*{image.height} chunk: {self.url}")
         try:
-            text: str = await asyncio.to_thread(
-                pytesseract.image_to_string,  # pyright: ignore
-                image,
-            )
+            text: str = await asyncio.to_thread(pytesseract.image_to_string, image)
         except (pytesseract.TesseractError, RuntimeError) as e:
-            logger.error(e)
+            logger.error(
+                f"Ignoring exception while extracting text from {self.url}: {e}"
+            )
             text = ""
-        split = text.lower().split()
-        items: list[str] = []
-        for kw in keywords:
-            for word in split:
-                if kw == word:
-                    items.append(word)
-        return self, items
+        # split = text.lower().split()
+        # items: list[str] = split
+        # # for kw in keywords:
+        # #     for word in split:
+        # #         if kw == word:
+        # #             items.append(word)
+        return self, text
 
 
 class PageLevel(Model):
@@ -66,9 +66,9 @@ class Page(Model):
 
     async def search(self, *, keywords: list[str], client: ClientProto) -> PageResult:
         """Return a `PageResult` containing self (the page in which matches were found) and a mapping of url to a list of the matches found in the corresponding image."""
-        target = self.levels.level2
-        matches: dict[str, list[str]] = {}
-        tasks: list[asyncio.Task[tuple[PageChunk, list[str]]]] = []
+        target = self.levels.level1
+        matches: dict[str, str] = {}
+        tasks: list[asyncio.Task[tuple[PageChunk, str]]] = []
         for chunk in target.chunks:
             task = asyncio.create_task(chunk.search(keywords=keywords, client=client))
             tasks.append(task)
@@ -81,7 +81,7 @@ class Page(Model):
 
 class PageResult(Model):
     page: Page
-    matches: dict[str, list[str]]
+    matches: dict[str, str]
 
 
 class PageMeta(Model):
@@ -102,6 +102,8 @@ class Result(Model):
     pages: list[PageResult]
     partial: PartialArticle
 
+    FIELDS: ClassVar = ["url", "date", "edition", "text"]
+
     @property
     def date(self):
         return self.partial.published
@@ -113,6 +115,10 @@ class Result(Model):
     @property
     def url(self):
         return self.partial.url
+
+    @property
+    def text(self):
+        return [page.matches for page in self.pages]
 
 
 class PartialArticleOCR:
@@ -157,6 +163,7 @@ class BaseReadwhereScraperOCR(BaseReadwhereScraper):
     async def search_edition_ocr(
         self, edition_id: int | str, edition_name: str
     ) -> list[Result]:
+        logger.info(f"Scraping edition {edition_name}!")
         partials = await self.get_partial_articles_ocr(edition_id, edition_name)
         tasks: list[asyncio.Task[Result]] = []
         for partial in partials:
@@ -164,7 +171,6 @@ class BaseReadwhereScraperOCR(BaseReadwhereScraper):
                 partial.search(client=self.http, keywords=self.keywords)
             )
             tasks.append(task)
-            break
         return await asyncio.gather(*tasks)
 
     @no_type_check
@@ -175,7 +181,6 @@ class BaseReadwhereScraperOCR(BaseReadwhereScraper):
                 self.search_edition_ocr(edition_id, edition_name)
             )
             tasks.append(task)
-            break
         data = [article for chunk in await asyncio.gather(*tasks) for article in chunk]
         return data
 

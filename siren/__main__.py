@@ -20,6 +20,11 @@ logger = logging.getLogger("siren")
 load_dotenv()
 
 
+class Cloud(BaseModel):
+    enabled: bool = False
+    root_folder_id: str
+
+
 class Config(BaseModel):
     scraper: str
     keywords: list[str]
@@ -30,7 +35,7 @@ class Config(BaseModel):
     log_file: str | None = None
     max_concurrency: int | None = None
     timeout: int | None = None
-    cloud: bool = False
+    cloud: Cloud
     out: str | None = None
 
 
@@ -73,22 +78,13 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-
-def upload_file(file: File):
-    if config.cloud:
-        cloud = Drive(
-            json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
-        )
-    else:
-        if o := config.out:
-            path = Path(o)
-        elif s := file.origin:
-            path = Path(f"{s.__class__.__name__}-data.csv")
-        else:
-            path = Path("data.csv")
-        cloud = Local(path)
-
-    cloud.upload_file(file, folder=getenv("FOLDER", ""))
+if config.cloud.enabled:
+    cloud = Drive(
+        json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
+        root=config.cloud.root_folder_id,
+    )
+else:
+    cloud = Local(Path("."))
 
 
 async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
@@ -112,6 +108,7 @@ async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
 
 
 async def run_all():
+    return
     tasks: list[asyncio.Task[File | None]] = []
     for _, Scraper in SCRAPERS.items():
         tasks.append(asyncio.create_task(run_scraper(Scraper)))
@@ -133,7 +130,7 @@ if __name__ == "__main__":
     if Scraper := SCRAPERS.get(config.scraper):
         file = run(run_scraper(Scraper))
         if file:
-            upload_file(file)
+            cloud.upload(file)
 
     elif config.scraper == "all":
         run(run_all())

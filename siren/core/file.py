@@ -15,9 +15,7 @@ class File:
     This class normalizes the interface for files and in-memory buffers.
     """
 
-    def __init__(
-        self, data: bytes, name: str, *, origin: "ScraperProto[Any] | None" = None
-    ):
+    def __init__(self, data: bytes, name: str, *, origin: "ScraperProto[Any]"):
         self.data = data
         self.name = name
         self.mimetype = mimetypes.guess_type(name)[0] or "application/pdf"
@@ -27,6 +25,6 @@ class File:
         return BytesIO(self.data)
 
     @classmethod
-    def from_path(cls, path: Path):
+    def from_path(cls, path: Path, *, origin: "ScraperProto[Any]"):
         with path.open("wb") as f:
-            return File(f.read(), str(path))
+            return File(f.read(), str(path), origin=origin)
