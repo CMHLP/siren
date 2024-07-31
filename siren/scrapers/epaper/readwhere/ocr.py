@@ -9,9 +9,10 @@ from io import BytesIO
 import asyncio
 import logging
 import pytesseract  # pyright: ignore[reportMissingTypeStubs]
+import easyocr
 
 logger = logging.getLogger(__name__)
-# reader = easyocr.Reader(["en"])
+reader = easyocr.Reader(["en"])
 
 
 class PageChunk(Model):
@@ -33,12 +34,12 @@ class PageChunk(Model):
         image = ImageOps.grayscale(image)
         logger.info(f"Running OCR on {image.width}*{image.height} chunk: {self.url}")
         try:
-            text: str = await asyncio.to_thread(pytesseract.image_to_string, image)
-            # buffer = BytesIO()
-            # image.save(buffer, format="jpeg")
-            # buffer.seek(0)
-            # raw = await asyncio.to_thread(reader.readtext, buffer.read(), detail=0)
-            # text: str = " ".join(raw)
+            # text: str = await asyncio.to_thread(pytesseract.image_to_string, image)
+            buffer = BytesIO()
+            image.save(buffer, format="jpeg")
+            buffer.seek(0)
+            raw = await asyncio.to_thread(reader.readtext, buffer.read(), detail=0)
+            text: str = " ".join(raw)
         except (pytesseract.TesseractError, RuntimeError) as e:
             logger.error(
                 f"Ignoring exception while extracting text from {self.url}: {e}"
