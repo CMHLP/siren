@@ -12,7 +12,7 @@ import pytesseract  # pyright: ignore[reportMissingTypeStubs]
 import easyocr
 
 logger = logging.getLogger(__name__)
-reader = easyocr.Reader(["en"])
+# reader = easyocr.Reader(["en"])
 
 
 class PageChunk(Model):

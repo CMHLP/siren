@@ -10,5 +10,5 @@ max_concurrency = 50
 # out = "data.csv"
 
 [cloud]
-enabled = false
+enabled = true
 root_folder_id = "1LAP6cwvR658hWVdVzI-FQ6eCQj5U3vIY"
