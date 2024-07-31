@@ -2,7 +2,7 @@
 name = "siren"
 version = "0.1.0"
 description = "Automated data collection for the SIREN program"
-authors = ["Your Name <you@example.com>"]
+authors = ["Aman Phatak <aman@zeffo.me>"]
 license = "MIT"
 readme = "README.md"
 

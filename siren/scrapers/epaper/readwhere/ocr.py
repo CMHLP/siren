@@ -1,15 +1,18 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
 from .core import BaseReadwhereScraper, PartialArticle
 from datetime import datetime
 from siren.core import Model, ClientProto
 from typing import ClassVar, Self, no_type_check
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 import asyncio
 import logging
 import pytesseract  # pyright: ignore[reportMissingTypeStubs]
+import easyocr
 
 logger = logging.getLogger(__name__)
+reader = easyocr.Reader(["en"])
 
 
 class PageChunk(Model):
@@ -25,11 +28,18 @@ class PageChunk(Model):
         """Return a list of strings found from the keywords list"""
         resp = await client.get(self.url)
         buf = BytesIO(resp.content)
-        image = Image.open(buf)  # pyright: ignore[reportUnknownMemberType]
-        image = image.convert("L")
+        image = Image.open(buf).convert(
+            "RGBA"
+        )  # pyright: ignore[reportUnknownMemberType]
+        image = ImageOps.grayscale(image)
         logger.info(f"Running OCR on {image.width}*{image.height} chunk: {self.url}")
         try:
-            text: str = await asyncio.to_thread(pytesseract.image_to_string, image)
+            # text: str = await asyncio.to_thread(pytesseract.image_to_string, image)
+            buffer = BytesIO()
+            image.save(buffer, format="jpeg")
+            buffer.seek(0)
+            raw = await asyncio.to_thread(reader.readtext, buffer.read(), detail=0)
+            text: str = " ".join(raw)
         except (pytesseract.TesseractError, RuntimeError) as e:
             logger.error(
                 f"Ignoring exception while extracting text from {self.url}: {e}"
@@ -66,7 +76,7 @@ class Page(Model):
 
     async def search(self, *, keywords: list[str], client: ClientProto) -> PageResult:
         """Return a `PageResult` containing self (the page in which matches were found) and a mapping of url to a list of the matches found in the corresponding image."""
-        target = self.levels.level1
+        target = self.levels.level2
         matches: dict[str, str] = {}
         tasks: list[asyncio.Task[tuple[PageChunk, str]]] = []
         for chunk in target.chunks:
@@ -171,18 +181,24 @@ class BaseReadwhereScraperOCR(BaseReadwhereScraper):
                 partial.search(client=self.http, keywords=self.keywords)
             )
             tasks.append(task)
+            break  # TODO: remove after benchmarking
         return await asyncio.gather(*tasks)
 
     @no_type_check
     async def scrape(self) -> list[Result]:
-        tasks: list[asyncio.Task[list[Result]]] = []
-        for edition_id, edition_name in self.EDITIONS.items():
-            task = asyncio.create_task(
-                self.search_edition_ocr(edition_id, edition_name)
-            )
-            tasks.append(task)
-        data = [article for chunk in await asyncio.gather(*tasks) for article in chunk]
-        return data
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            asyncio.get_event_loop().set_default_executor(pool)
+            tasks: list[asyncio.Task[list[Result]]] = []
+            for edition_id, edition_name in self.EDITIONS.items():
+                task = asyncio.create_task(
+                    self.search_edition_ocr(edition_id, edition_name)
+                )
+                tasks.append(task)
+                break  # TODO: remove after benchmarking
+            data = [
+                article for chunk in await asyncio.gather(*tasks) for article in chunk
+            ]
+            return data
 
     async def to_csv(
         self,

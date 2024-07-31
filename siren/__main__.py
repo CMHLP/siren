@@ -5,7 +5,7 @@ import argparse
 import time
 import logging
 from os import getenv
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 from dotenv import load_dotenv
@@ -45,8 +45,8 @@ def strptime(string: str):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--scraper")
-parser.add_argument("--start", type=strptime)
-parser.add_argument("--end", type=strptime)
+parser.add_argument("--start", type=strptime, default=None)
+parser.add_argument("--end", type=strptime, default=None)
 parser.add_argument("--out", default=None)
 parser.add_argument("--keywords", nargs="+", default=[])
 parser.add_argument("--ignore-keywords", nargs="+", default=[])
@@ -56,13 +56,33 @@ parser.add_argument("--log-level", type=int, default=logging.DEBUG)
 parser.add_argument("--max-concurrency", type=int, default=None)
 parser.add_argument("--gen-workflow")
 parser.add_argument("--config", default=None)
+parser.add_argument("--days", type=int, default=1)
+parser.add_argument("--cloud", action="store_true")
+parser.add_argument("--root_folder_id", default=None)
 
 args = parser.parse_args()
+
 
 if fp := args.config:
     with open(fp, "rb") as f:
         config = Config(**tomllib.load(f))
 else:
+
+    if not any((args.start, args.end)):
+        args.start = datetime.now()
+        args.end = datetime.now() + timedelta(days=args.days)
+    elif args.start:
+        args.end = args.start + timedelta(days=args.days)
+    else:
+        args.start = args.end - timedelta(days=args.days)
+
+    if args.cloud:
+        assert isinstance(
+            args.root_folder_id, str
+        ), "--root_folder_id must be passed along with --cloud!"
+
+        args.cloud = {"enabled": True, "root_folder_id": args.root_folder_id}
+
     config = Config(**args.__dict__)
 
 
