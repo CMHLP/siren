@@ -1,7 +1,3 @@
-# SIREN Data Collection and Analysis Suite
-
-## Scrapers
-
 E-Papers (siren/scrapers/epaper)
 
 - [x] The New Indian Express (readwhere/tnie.py)
@@ -18,6 +14,7 @@ Online Publications
 - [x] Mirror
 - [x] News Minute
 - [ ] Telegraph
+- [x] Quint/Week/Wire/Scroll
 
 ## Benchmarks
 

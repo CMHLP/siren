@@ -35,7 +35,7 @@ class Config(BaseModel):
     log_file: str | None = None
     max_concurrency: int | None = None
     timeout: int | None = None
-    cloud: Cloud
+    cloud: Cloud | None = None
     out: str | None = None
 
 
@@ -82,6 +82,8 @@ else:
         ), "--root_folder_id must be passed along with --cloud!"
 
         args.cloud = {"enabled": True, "root_folder_id": args.root_folder_id}
+    else:
+        args.cloud = None
 
     config = Config(**args.__dict__)
 
@@ -98,7 +100,7 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-if config.cloud.enabled:
+if config.cloud and config.cloud.enabled:
     cloud = Drive(
         json.loads(getenv("SERVICE_ACCOUNT_CREDENTIALS", "{}")),
         root=config.cloud.root_folder_id,

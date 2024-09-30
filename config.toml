@@ -1,8 +1,10 @@
-scraper = "epaper.readwhere.tie.TIEScraperOCR"
+scraper = "online.indiatoday.IndiaTodayOnlineScraper"
 keywords = ["suicide", "kill self", "ends life", "hang self", "found dead"]
 ignore_keywords = ["suicide bomb"]
-start = "2024-06-10"
-end = "2024-06-11"
+# start = "2024-06-10"
+# end = "2024-06-11"
+start = "2022-10-01"
+end = "2022-12-31"
 # log_file = ".log"
 # log_level
 max_concurrency = 50
@@ -10,5 +12,5 @@ max_concurrency = 50
 # out = "data.csv"
 
 [cloud]
-enabled = true
+enabled = false
 root_folder_id = "1LAP6cwvR658hWVdVzI-FQ6eCQj5U3vIY"

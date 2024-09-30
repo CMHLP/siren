@@ -10,6 +10,7 @@ import asyncio
 import logging
 import pytesseract  # pyright: ignore[reportMissingTypeStubs]
 
+
 # import easyocr
 
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ class BaseReadwhereScraperOCR(BaseReadwhereScraper):
 
     @no_type_check
     async def scrape(self) -> list[Result]:
-        with ThreadPoolExecutor(max_workers=2) as pool:
+        with ThreadPoolExecutor(max_workers=1) as pool:
             asyncio.get_event_loop().set_default_executor(pool)
             tasks: list[asyncio.Task[list[Result]]] = []
             for edition_id, edition_name in self.EDITIONS.items():
