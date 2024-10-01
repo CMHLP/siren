@@ -1,5 +1,5 @@
 import asyncio
-
+import re
 
 from typing import Callable, Coroutine, Any
 
@@ -11,3 +11,6 @@ def to_thread[R, **P](fn: Callable[P, R]) -> Callable[P, Coroutine[Any, Any, R]]
         return asyncio.to_thread(fn, *args, **kwargs)
 
     return inner
+
+
+HTMLRE = re.compile("<.*?>")

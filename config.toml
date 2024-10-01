@@ -1,4 +1,4 @@
-scraper = "online.indiatoday.IndiaTodayOnlineScraper"
+scraper = "online.toi.TOIOnlineScraper"
 keywords = ["suicide", "kill self", "ends life", "hang self", "found dead"]
 ignore_keywords = ["suicide bomb"]
 # start = "2024-06-10"
@@ -7,7 +7,7 @@ start = "2022-10-01"
 end = "2022-12-31"
 # log_file = ".log"
 # log_level
-max_concurrency = 50
+# max_concurrency = 50
 # timeout = 1000
 # out = "data.csv"
 

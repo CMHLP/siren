@@ -69,8 +69,8 @@ if fp := args.config:
 else:
 
     if not any((args.start, args.end)):
-        args.start = datetime.now()
-        args.end = datetime.now() + timedelta(days=args.days)
+        args.start = datetime.now(tz=timezone.utc)
+        args.end = datetime.now(tz=timezone.utc) + timedelta(days=args.days)
     elif args.start:
         args.end = args.start + timedelta(days=args.days)
     else:
