@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import asyncio
-import pytesseract  # type: ignore
 from datetime import datetime
+from logging import getLogger
+
+import pytesseract  # type: ignore
 from pydantic import ConfigDict
 from yarl import URL
-from logging import getLogger
-from siren.core import Model, ClientProto, BaseScraper
 
+from siren.core import BaseScraper, ClientProto, Model
 
 logger = getLogger(__name__)
 
@@ -104,7 +106,7 @@ class PartialArticle(Model):
             for article in data["data"]:
                 for field in self.model_fields:
                     article[field] = getattr(self, field, None)
-        return SearchPageResult(**data)
+        return SearchPageResult(**data, keyword=keyword)
 
     async def search_many(
         self, keywords: list[str], *, client: ClientProto
@@ -122,6 +124,7 @@ class Article(PartialArticle):
     excerpt: str
     issue_id: int
     title_id: int
+    keyword: str
 
     @property
     def url(self):

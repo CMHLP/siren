@@ -1,16 +1,15 @@
 import asyncio
-import json
 import csv
-from io import StringIO
+import json
+import logging
 from datetime import datetime
+from io import StringIO
 from json import JSONDecodeError
 from typing import Any, ClassVar
-import logging
-
-from siren.core import File, BaseScraper, Model
 
 import pydantic
 
+from siren.core import BaseScraper, File, Model
 from siren.core.http import ClientProto
 
 logger = logging.getLogger(__name__)
@@ -62,6 +61,7 @@ class Article(Model):
     epaper_view: str
     score: float
     edition_details: Edition
+    keyword: str = "-"
 
     @pydantic.validator("createdAt", "updatedAt", pre=True)
     def convert_iso_dt(cls, raw: str):
@@ -209,7 +209,7 @@ class TOIScraper(BaseScraper[Article]):
     async def scrape(self):
         tasks: list[asyncio.Task[list[Article]]] = []
         for term in self.keywords:
-            exclude = ["bomb"]
+            exclude: list[str] = []
             search = Search(
                 client=self.http,
                 include_any=[term],

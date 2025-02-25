@@ -3,7 +3,7 @@ import csv
 from datetime import datetime, date, timedelta
 from io import StringIO
 from .http import HTTP
-from .model import Model
+from .model import ResultModel
 from .file import File
 from typing import Any, Protocol
 
@@ -25,7 +25,7 @@ def transform(item: Any) -> str:
             return str(item)
 
 
-class ScraperProto[T: Model](Protocol):
+class ScraperProto[T: ResultModel](Protocol):
     """
     Scraper Protocol class. All scrapers should adhere to this protocol.
 
@@ -46,6 +46,7 @@ class ScraperProto[T: Model](Protocol):
     start: datetime
     end: datetime
     keywords: list[str]
+    ignore_keywords: list[str]
     http: HTTP
 
     def __init__(
@@ -54,6 +55,7 @@ class ScraperProto[T: Model](Protocol):
         start: datetime,
         end: datetime,
         keywords: list[str],
+        ignore_keywords: list[str],
         http: HTTP,
     ): ...
 
@@ -64,7 +66,9 @@ class ScraperProto[T: Model](Protocol):
     async def to_file(self) -> File: ...
 
 
-class BaseScraper[T: Model](ABC, ScraperProto[T]):
+class BaseScraper[T: ResultModel](ABC, ScraperProto[T]):
+
+    FIELDS: tuple[str]
 
     def __init__(
         self,
@@ -72,11 +76,13 @@ class BaseScraper[T: Model](ABC, ScraperProto[T]):
         start: datetime,
         end: datetime,
         keywords: list[str],
+        ignore_keywords: list[str],
         http: HTTP,
     ):
         self.start = start
         self.end = end
         self.keywords = keywords
+        self.ignore_keywords = ignore_keywords
         self.http = http
 
     @abstractmethod

@@ -1,20 +1,21 @@
-import asyncio
-import tomllib
-import json
 import argparse
-import time
+import asyncio
+import json
 import logging
+import time
+import tomllib
+import traceback
+from datetime import datetime, timedelta, timezone
 from os import getenv
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
+
 from dotenv import load_dotenv
-import traceback
-from siren.core import ScraperProto, Local, Drive, File, HTTP
-from siren import SCRAPERS
-from httpx import Timeout, AsyncClient
+from httpx import AsyncClient, Timeout
 from pydantic import BaseModel
 
+from siren import SCRAPERS
+from siren.core import HTTP, Drive, File, Local, ScraperProto
 
 logger = logging.getLogger("siren")
 load_dotenv()
@@ -118,6 +119,7 @@ async def run_scraper(Scraper: type[ScraperProto[Any]]) -> File | None:
                 start=config.start,
                 end=config.end,
                 keywords=config.keywords,
+                ignore_keywords=config.ignore_keywords,
                 http=HTTP(client, max_concurrency=config.max_concurrency),
             )
             logger.info(f"Scraping {scraper} with keywords: {config.keywords}")
@@ -138,14 +140,7 @@ async def run_all():
             cloud.upload(f)
 
 
-try:
-    import uvloop
-
-    run = uvloop.run
-except ModuleNotFoundError:
-    import asyncio
-
-    run = asyncio.run
+run = asyncio.run  # TODO: add uvloop support
 
 if __name__ == "__main__":
     if Scraper := SCRAPERS.get(config.scraper):

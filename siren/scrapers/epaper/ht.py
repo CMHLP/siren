@@ -1,12 +1,14 @@
-from typing import Any, Annotated, ClassVar
-from yarl import URL
-from bs4 import BeautifulSoup
-from datetime import datetime
-import httpx
 import asyncio
-from siren.core import BaseScraper, Model
+from datetime import datetime
 from logging import getLogger
-from pydantic import Field, BeforeValidator, ValidationError
+from typing import Annotated, Any, ClassVar
+
+import httpx
+from bs4 import BeautifulSoup
+from pydantic import BeforeValidator, Field, ValidationError
+from yarl import URL
+
+from siren.core import BaseScraper, Model
 
 __all__ = ("HTScraper",)
 
@@ -217,7 +219,7 @@ class HTScraper(BaseScraper[HTArticle]):
                     assert item is not None
                     data[aliases[item.attrs["data-name"]]] = item.text
                 data["edition_id"] = edition_id
-                items.append(HTPartialArticle(**data))
+                items.append(HTPartialArticle(**data, keyword=search_text))
         return items
 
     async def _scrape(
