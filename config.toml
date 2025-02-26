@@ -1,4 +1,4 @@
-scraper = "online.outlook.OutlookOnlineScraper"
+scraper = "epaper.hindu.TheHinduScraper"
 keywords = ["suicide", "kill self", "ends life", "hang self", "found dead"]
 ignore_keywords = ["suicide bomb", "suicide attack", "suicide drone"]
 # start = "2024-06-10"
