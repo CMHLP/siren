@@ -65,6 +65,9 @@ class ScraperProto[T: ResultModel](Protocol):
     @abstractmethod
     async def to_file(self) -> File: ...
 
+    @abstractmethod
+    async def clean(self, data: list[T]) -> list[T]: ...
+
 
 class BaseScraper[T: ResultModel](ABC, ScraperProto[T]):
 
@@ -144,8 +147,22 @@ class BaseScraper[T: ResultModel](ABC, ScraperProto[T]):
         file.seek(0)
         return file
 
-    def clean(self, data: list[T]):
-        return data
+    def clean(self, data: list[T]) -> list[T]:
+        """Filter and clean the result data."""
+        filtered: list[T] = []
+        for item in data:
+            # We check for the following here:
+            # 1. The corresponding keyword is actually present in the content
+            # 2. None of the ignore_keywords are present in the content
+            # 3. The article lies in the given date range
+
+            if (
+                item.keyword in item.content.lower()
+                and not any(kw in item.content.lower() for kw in self.ignore_keywords)
+                and self.start <= item.date.replace(tzinfo=None) <= self.end
+            ):
+                filtered.append(item)
+        return filtered
 
     async def to_file(self) -> File:
         file = await self.to_csv()
